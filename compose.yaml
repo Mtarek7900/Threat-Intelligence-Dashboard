@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: tid
+      POSTGRES_USER: tid
+      POSTGRES_PASSWORD: tid
+    ports:
+      # Published so `./mvnw spring-boot:run` can use it during development
+      - "5432:5432"
+    volumes:
+      - tid-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "tid", "-d", "tid"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      # Source API keys; optional so a fresh clone starts without one
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/tid
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  tid-db:

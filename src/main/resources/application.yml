@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: threat-intelligence-dashboard
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/tid}
+    username: ${DATABASE_USERNAME:tid}
+    password: ${DATABASE_PASSWORD:tid}
