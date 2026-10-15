@@ -7,15 +7,17 @@ import java.util.UUID;
 /**
  * What one Source reported about one Indicator at {@code fetchedAt}. Never changed once stored.
  *
- * @param facts what the Source reported, or null when it has Not Seen the Indicator
+ * @param notCheckedReason why the Source wasn't asked or couldn't answer; null unless Not Checked
+ * @param facts what the Source reported, or null unless it has Seen the Indicator
  * @param link the Indicator's page on the Source's own site
- * @param rawResponse the Source's response body, exactly as received
+ * @param rawResponse the Source's response body, exactly as received; null when Not Checked
  */
 public record SourceResult(
         UUID id,
         String source,
         Indicator indicator,
         Outcome outcome,
+        NotCheckedReason notCheckedReason,
         SourceFacts facts,
         String link,
         String rawResponse,

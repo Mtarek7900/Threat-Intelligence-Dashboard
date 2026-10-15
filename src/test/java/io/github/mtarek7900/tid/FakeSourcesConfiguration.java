@@ -25,9 +25,6 @@ public class FakeSourcesConfiguration {
 
     @Bean
     DynamicPropertyRegistrar fakeSourceProperties(WireMockServer fakeSources) {
-        return registry -> {
-            registry.add("tid.sources.virustotal.base-url", fakeSources::baseUrl);
-            registry.add("tid.sources.virustotal.api-key", () -> FakeVirusTotal.API_KEY);
-        };
+        return registry -> registry.add("tid.sources.virustotal.base-url", fakeSources::baseUrl);
     }
 }

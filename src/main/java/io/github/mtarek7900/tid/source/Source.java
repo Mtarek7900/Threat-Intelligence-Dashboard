@@ -13,10 +13,13 @@ public interface Source {
     /** The Indicator Types this Source is asked about. */
     Set<IndicatorType> indicatorTypes();
 
+    /** The Indicator's page on the Source's own site. */
+    String link(Indicator indicator);
+
     /**
      * Asks the Source about the Indicator.
      *
-     * @throws SourceException if the Source didn't give a usable answer
+     * @throws SourceException if the Source wasn't asked or didn't give a usable answer
      */
     SourceResult fetch(Indicator indicator);
 }

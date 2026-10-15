@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -22,7 +23,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  * by WireMock and a {@link TestClock} in place of the system clock. Inject the TestClock to control
  * time and {@link FakeVirusTotal} to say what VirusTotal answers. Every test starts with no Lookups,
  * no Source Results and nothing programmed into the fake Sources, because all integration tests
- * share one database and one WireMock server.
+ * share one database and one WireMock server. Each Source gets {@link #SOURCE_TIMEOUT} to answer;
+ * a test class can override these properties with its own {@code @TestPropertySource}.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -32,9 +34,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     FakeSourcesConfiguration.class,
     IntegrationTest.TestClockConfiguration.class
 })
+@TestPropertySource(
+        properties = {
+            "tid.sources.virustotal.api-key=" + FakeVirusTotal.API_KEY,
+            "tid.sources.timeout=" + IntegrationTest.SOURCE_TIMEOUT
+        })
 @Sql(statements = "truncate lookup_source_result, lookup, source_result")
 @ExtendWith(IntegrationTest.ResetFakeSources.class)
 public @interface IntegrationTest {
+
+    String SOURCE_TIMEOUT = "2s";
 
     @TestConfiguration(proxyBeanMethods = false)
     class TestClockConfiguration {

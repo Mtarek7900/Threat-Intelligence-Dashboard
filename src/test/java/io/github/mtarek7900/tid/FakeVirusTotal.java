@@ -6,9 +6,12 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
+import com.github.tomakehurst.wiremock.http.Fault;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import org.springframework.core.io.ClassPathResource;
 
 /**
@@ -27,12 +30,40 @@ public class FakeVirusTotal {
 
     /** Answers a GET of {@code /api/v3/<path>}, e.g. {@code ip_addresses/1.2.3.4}, with a recording. */
     public void answers(String path, int status, String recording) {
+        answersAfter(Duration.ZERO, path, status, recording);
+    }
+
+    /** Like {@link #answers}, but only after the delay. */
+    public void answersAfter(Duration delay, String path, int status, String recording) {
+        respond(path, recorded(status, recording).withFixedDelay((int) delay.toMillis()));
+    }
+
+    /** Answers with an error status and no body. */
+    public void failsWith(String path, int status) {
+        respond(path, aResponse().withStatus(status));
+    }
+
+    /** Resets the connection without answering. */
+    public void dropsConnection(String path) {
+        respond(path, aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER));
+    }
+
+    /** How many requests reached VirusTotal at all. */
+    public int requestsReceived() {
+        return server.getAllServeEvents().size();
+    }
+
+    private void respond(String path, ResponseDefinitionBuilder response) {
         server.stubFor(get(urlPathEqualTo("/api/v3/" + path))
                 .withHeader("x-apikey", equalTo(API_KEY))
-                .willReturn(aResponse()
-                        .withStatus(status)
-                        .withHeader("Content-Type", "application/json")
-                        .withBodyFile("virustotal/" + recording)));
+                .willReturn(response));
+    }
+
+    private static ResponseDefinitionBuilder recorded(int status, String recording) {
+        return aResponse()
+                .withStatus(status)
+                .withHeader("Content-Type", "application/json")
+                .withBodyFile("virustotal/" + recording);
     }
 
     /** The recorded response body, exactly as VirusTotal sent it. */

@@ -21,16 +21,18 @@ public class SourceResults {
     public void add(SourceResult result) {
         jdbc.sql("""
                         insert into source_result
-                            (id, source, indicator, indicator_type, outcome, facts, link, raw_response, fetched_at)
+                            (id, source, indicator, indicator_type, outcome, not_checked_reason, facts, link,
+                             raw_response, fetched_at)
                         values
-                            (:id, :source, :indicator, :indicatorType, :outcome, cast(:facts as jsonb), :link,
-                             :rawResponse, :fetchedAt)
+                            (:id, :source, :indicator, :indicatorType, :outcome, :notCheckedReason,
+                             cast(:facts as jsonb), :link, :rawResponse, :fetchedAt)
                         """)
                 .param("id", result.id())
                 .param("source", result.source())
                 .param("indicator", result.indicator().value())
                 .param("indicatorType", result.indicator().type().name())
                 .param("outcome", result.outcome().name())
+                .param("notCheckedReason", result.notCheckedReason() == null ? null : result.notCheckedReason().name())
                 .param("facts", result.facts() == null ? null : toJson(result.facts()))
                 .param("link", result.link())
                 .param("rawResponse", result.rawResponse())

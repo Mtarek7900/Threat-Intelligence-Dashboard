@@ -4,10 +4,10 @@
 
 **Blocked by:** 03 (VirusTotal Lookup with Verdict)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Relevant Sources are called in parallel; the per-Source timeout (default 10 s) is configurable
-- [ ] Timeout, server error, rate-limited response and missing API key each produce a Not Checked Source Result with a distinct reason; the app never fails because of one Source
-- [ ] The Verdict rule marks the Verdict Partial and lists the Sources that weren't checked whenever any asked Source is Not Checked; table tests cover this, including "all Not Checked" (Unknown, Partial)
-- [ ] Integration tests use WireMock delays and errors to prove the timeout, the error handling and that total time is bounded by the slowest Source rather than the sum
-- [ ] The UI shows a loading state during a Lookup, a "Partial" label naming the missing Sources, and the reason on each Not Checked panel; frontend tests cover these
+- [x] Relevant Sources are called in parallel; the per-Source timeout (default 10 s) is configurable
+- [x] Timeout, server error, rate-limited response and missing API key each produce a Not Checked Source Result with a distinct reason; the app never fails because of one Source
+- [x] The Verdict rule marks the Verdict Partial and lists the Sources that weren't checked whenever any asked Source is Not Checked; table tests cover this, including "all Not Checked" (Unknown, Partial)
+- [x] Integration tests use WireMock delays and errors to prove the timeout, the error handling and that total time is bounded by the slowest Source rather than the sum
+- [x] The UI shows a loading state during a Lookup, a "Partial" label naming the missing Sources, and the reason on each Not Checked panel; frontend tests cover these

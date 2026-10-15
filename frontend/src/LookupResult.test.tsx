@@ -14,12 +14,15 @@ const maliciousLookup = {
   indicator: '185.220.101.1',
   indicatorType: 'IP_ADDRESS',
   verdict: 'MALICIOUS',
+  partial: false,
+  sourcesNotChecked: [],
   why: ['VirusTotal: 14 of 94 engines flagged it. 3 or more is Malicious.'],
   sourcesAsked: ['VirusTotal'],
   sourceResults: [
     {
       source: 'VirusTotal',
       outcome: 'SEEN',
+      notCheckedReason: null,
       signal: 'MALICIOUS',
       facts: { enginesFlagged: 14, enginesTotal: 94, lastAnalysedAt: '2026-01-14T08:30:00Z' },
       link: 'https://www.virustotal.com/gui/ip-address/185.220.101.1',
@@ -35,12 +38,15 @@ const unknownLookup = {
   indicator: '9f2c4e1b7a5d3c8e6f0a2b4d6c8e0f1a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e',
   indicatorType: 'FILE_HASH',
   verdict: 'UNKNOWN',
+  partial: false,
+  sourcesNotChecked: [],
   why: ['VirusTotal has no record of it. No Signal.'],
   sourcesAsked: ['VirusTotal'],
   sourceResults: [
     {
       source: 'VirusTotal',
       outcome: 'NOT_SEEN',
+      notCheckedReason: null,
       signal: 'NONE',
       facts: null,
       link: 'https://www.virustotal.com/gui/file/9f2c4e1b7a5d3c8e6f0a2b4d6c8e0f1a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e',

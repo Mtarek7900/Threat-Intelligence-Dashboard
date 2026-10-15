@@ -6,6 +6,8 @@
 
 **Status:** ready-for-agent
 
+> Note from ticket 06: a call that times out is not cancelled at the Source, so it still uses that Source's quota. Count each call when it is sent, not when it succeeds.
+
 - [ ] Each real call to a Source is counted per UTC day; reused Source Results don't count
 - [ ] Per-Source daily quota and stop percentage (default 90%) are configurable, defaulting to VirusTotal 500, AbuseIPDB 1,000 and OTX generous
 - [ ] At or above the stop, the Source isn't called and its Source Result is Not Checked with reason "daily limit reached"

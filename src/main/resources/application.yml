@@ -8,6 +8,8 @@ spring:
 
 tid:
   sources:
+    # How long each Source gets to answer before its Source Result is Not Checked
+    timeout: ${SOURCE_TIMEOUT:10s}
     virustotal:
       base-url: ${VIRUSTOTAL_BASE_URL:https://www.virustotal.com}
       api-key: ${VIRUSTOTAL_API_KEY:}

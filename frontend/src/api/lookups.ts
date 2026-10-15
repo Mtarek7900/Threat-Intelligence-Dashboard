@@ -18,7 +18,9 @@ export type IndicatorType = 'IP_ADDRESS' | 'DOMAIN' | 'FILE_HASH'
 
 export type Verdict = 'MALICIOUS' | 'SUSPICIOUS' | 'CLEAN' | 'UNKNOWN'
 
-export type Outcome = 'SEEN' | 'NOT_SEEN'
+export type Outcome = 'SEEN' | 'NOT_SEEN' | 'NOT_CHECKED'
+
+export type NotCheckedReason = 'TIMEOUT' | 'SOURCE_ERROR' | 'RATE_LIMITED' | 'MISSING_API_KEY'
 
 export type Signal = 'MALICIOUS' | 'SUSPICIOUS' | 'NONE'
 
@@ -28,15 +30,19 @@ export type VirusTotalFacts = {
   lastAnalysedAt: string
 }
 
-/** A Source Result the Lookup used. `facts` is null when the Source has Not Seen the Indicator. */
+/**
+ * A Source Result the Lookup used. `facts` is null unless the Source has Seen the Indicator;
+ * `notCheckedReason` is null and `rawResponse` present unless it was Not Checked.
+ */
 export type SourceResult = {
   source: 'VirusTotal'
   outcome: Outcome
+  notCheckedReason: NotCheckedReason | null
   signal: Signal
   facts: VirusTotalFacts | null
   link: string
   fetchedAt: string
-  rawResponse: string
+  rawResponse: string | null
 }
 
 export type Lookup = {
@@ -44,6 +50,8 @@ export type Lookup = {
   indicator: string
   indicatorType: IndicatorType
   verdict: Verdict
+  partial: boolean
+  sourcesNotChecked: string[]
   why: string[]
   sourcesAsked: string[]
   sourceResults: SourceResult[]

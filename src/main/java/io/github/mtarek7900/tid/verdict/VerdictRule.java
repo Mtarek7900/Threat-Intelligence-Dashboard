@@ -1,5 +1,6 @@
 package io.github.mtarek7900.tid.verdict;
 
+import io.github.mtarek7900.tid.source.NotCheckedReason;
 import io.github.mtarek7900.tid.source.Outcome;
 import io.github.mtarek7900.tid.source.SourceResult;
 import io.github.mtarek7900.tid.source.VirusTotalFacts;
@@ -7,7 +8,8 @@ import java.util.List;
 
 /**
  * Combines a Lookup's Source Results into a Verdict: the worst Signal wins; with no Signal it's
- * Clean if any Source has Seen the Indicator, otherwise Unknown.
+ * Clean if any Source has Seen the Indicator, otherwise Unknown. It's a Partial Verdict if any
+ * Source was Not Checked.
  */
 public final class VerdictRule {
 
@@ -19,7 +21,11 @@ public final class VerdictRule {
 
     public Decision decide(List<SourceResult> results) {
         var readings = results.stream().map(this::read).toList();
-        return new Decision(verdictOf(readings), readings);
+        var notChecked = results.stream()
+                .filter(result -> result.outcome() == Outcome.NOT_CHECKED)
+                .map(SourceResult::source)
+                .toList();
+        return new Decision(verdictOf(readings), readings, notChecked);
     }
 
     private static Verdict verdictOf(List<Reading> readings) {
@@ -36,8 +42,17 @@ public final class VerdictRule {
     }
 
     private Reading read(SourceResult result) {
-        if (result.outcome() == Outcome.NOT_SEEN) {
-            return new Reading(result, Signal.NONE, result.source() + " has no record of it. No Signal.");
+        switch (result.outcome()) {
+            case NOT_SEEN -> {
+                return new Reading(result, Signal.NONE, result.source() + " has no record of it. No Signal.");
+            }
+            case NOT_CHECKED -> {
+                return new Reading(
+                        result,
+                        Signal.NONE,
+                        result.source() + " was Not Checked: " + because(result.notCheckedReason()) + ".");
+            }
+            case SEEN -> {}
         }
         return switch (result.facts()) {
             case VirusTotalFacts facts -> read(result, facts, thresholds.virustotal());
@@ -55,6 +70,15 @@ public final class VerdictRule {
             return new Reading(result, Signal.SUSPICIOUS, flagged + range(thresholds) + " is Suspicious.");
         }
         return new Reading(result, Signal.NONE, flagged + "No Signal.");
+    }
+
+    private static String because(NotCheckedReason reason) {
+        return switch (reason) {
+            case TIMEOUT -> "it didn't answer in time";
+            case SOURCE_ERROR -> "it answered with an error";
+            case RATE_LIMITED -> "it is limiting how often it can be asked";
+            case MISSING_API_KEY -> "no API key is configured";
+        };
     }
 
     private static String range(VerdictThresholds.VirusTotal thresholds) {

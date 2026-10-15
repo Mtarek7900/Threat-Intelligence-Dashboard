@@ -42,6 +42,11 @@ export function LookupForm() {
         </button>
       </form>
 
+      {state.status === 'looking-up' && (
+        <p role="status" className="mt-3 text-slate-600">
+          Asking the Sources…
+        </p>
+      )}
       {state.status === 'rejected' && (
         <p role="alert" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
           {state.message}

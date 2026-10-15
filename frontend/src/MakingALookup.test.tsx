@@ -20,12 +20,15 @@ test('submitting an Indicator shows the normalised Indicator, its Type and the V
           indicator: 'evil.com',
           indicatorType: 'DOMAIN',
           verdict: 'UNKNOWN',
+          partial: false,
+          sourcesNotChecked: [],
           why: ['VirusTotal has no record of it. No Signal.'],
           sourcesAsked: ['VirusTotal'],
           sourceResults: [
             {
               source: 'VirusTotal',
               outcome: 'NOT_SEEN',
+              notCheckedReason: null,
               signal: 'NONE',
               facts: null,
               link: 'https://www.virustotal.com/gui/domain/evil.com',

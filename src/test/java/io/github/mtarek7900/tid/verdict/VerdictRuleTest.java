@@ -6,6 +6,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.mtarek7900.tid.indicator.Indicator;
 import io.github.mtarek7900.tid.indicator.IndicatorType;
+import io.github.mtarek7900.tid.source.NotCheckedReason;
 import io.github.mtarek7900.tid.source.Outcome;
 import io.github.mtarek7900.tid.source.SourceResult;
 import io.github.mtarek7900.tid.source.VirusTotalFacts;
@@ -58,7 +59,34 @@ class VerdictRuleTest {
                 arguments("Suspicious + no Signal", List.of(virusTotalSeen(0), virusTotalSeen(2)), Verdict.SUSPICIOUS),
                 arguments("Suspicious + Not Seen", List.of(virusTotalNotSeen(), virusTotalSeen(2)), Verdict.SUSPICIOUS),
                 arguments("no Signal + Not Seen", List.of(virusTotalNotSeen(), virusTotalSeen(0)), Verdict.CLEAN),
-                arguments("Not Seen + Not Seen", List.of(virusTotalNotSeen(), virusTotalNotSeen()), Verdict.UNKNOWN));
+                arguments("Not Seen + Not Seen", List.of(virusTotalNotSeen(), virusTotalNotSeen()), Verdict.UNKNOWN),
+                arguments("Not Checked", List.of(notChecked("VirusTotal", NotCheckedReason.TIMEOUT)), Verdict.UNKNOWN),
+                arguments("Malicious + Not Checked", List.of(virusTotalSeen(5), notChecked("Other", NotCheckedReason.TIMEOUT)), Verdict.MALICIOUS),
+                arguments("Suspicious + Not Checked", List.of(virusTotalSeen(1), notChecked("Other", NotCheckedReason.TIMEOUT)), Verdict.SUSPICIOUS),
+                arguments("no Signal + Not Checked", List.of(virusTotalSeen(0), notChecked("Other", NotCheckedReason.TIMEOUT)), Verdict.CLEAN),
+                arguments("Not Seen + Not Checked", List.of(virusTotalNotSeen(), notChecked("Other", NotCheckedReason.TIMEOUT)), Verdict.UNKNOWN));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void theVerdictIsPartialAndNamesTheSourcesThatWereNotChecked(
+            String combination, List<SourceResult> results, List<String> notChecked) {
+        var decision = rule.decide(results);
+
+        assertThat(decision.notChecked()).isEqualTo(notChecked);
+        assertThat(decision.partial()).isEqualTo(!notChecked.isEmpty());
+    }
+
+    static Stream<Arguments> theVerdictIsPartialAndNamesTheSourcesThatWereNotChecked() {
+        return Stream.of(
+                arguments("all checked", List.of(virusTotalSeen(5), virusTotalNotSeen()), List.of()),
+                arguments("no Source Results", List.of(), List.of()),
+                arguments("all Not Checked",
+                        List.of(notChecked("VirusTotal", NotCheckedReason.TIMEOUT), notChecked("AbuseIPDB", NotCheckedReason.MISSING_API_KEY)),
+                        List.of("VirusTotal", "AbuseIPDB")),
+                arguments("one Not Checked",
+                        List.of(virusTotalSeen(5), notChecked("AbuseIPDB", NotCheckedReason.SOURCE_ERROR)),
+                        List.of("AbuseIPDB")));
     }
 
     @ParameterizedTest(name = "Malicious at {0}, Suspicious at {1}: {2} engines -> {3}")
@@ -100,7 +128,11 @@ class VerdictRuleTest {
                 arguments(virusTotalSeen(5), "VirusTotal: 5 of 94 engines flagged it. 3 or more is Malicious."),
                 arguments(virusTotalSeen(2), "VirusTotal: 2 of 94 engines flagged it. 1 to 2 is Suspicious."),
                 arguments(virusTotalSeen(0), "VirusTotal: 0 of 94 engines flagged it. No Signal."),
-                arguments(virusTotalNotSeen(), "VirusTotal has no record of it. No Signal."));
+                arguments(virusTotalNotSeen(), "VirusTotal has no record of it. No Signal."),
+                arguments(notChecked("VirusTotal", NotCheckedReason.TIMEOUT), "VirusTotal was Not Checked: it didn't answer in time."),
+                arguments(notChecked("VirusTotal", NotCheckedReason.SOURCE_ERROR), "VirusTotal was Not Checked: it answered with an error."),
+                arguments(notChecked("VirusTotal", NotCheckedReason.RATE_LIMITED), "VirusTotal was Not Checked: it is limiting how often it can be asked."),
+                arguments(notChecked("VirusTotal", NotCheckedReason.MISSING_API_KEY), "VirusTotal was Not Checked: no API key is configured."));
     }
 
     @ParameterizedTest(name = "Malicious at {0}, Suspicious at {1}: {2}")
@@ -134,9 +166,23 @@ class VerdictRuleTest {
                 "VirusTotal",
                 new Indicator("evil.com", IndicatorType.DOMAIN),
                 Outcome.SEEN,
+                null,
                 new VirusTotalFacts(flagged, 94, Instant.parse("2026-01-14T08:30:00Z")),
                 "https://www.virustotal.com/gui/domain/evil.com",
                 "{}",
+                Instant.parse("2026-01-15T10:00:00Z"));
+    }
+
+    static SourceResult notChecked(String source, NotCheckedReason reason) {
+        return new SourceResult(
+                UUID.randomUUID(),
+                source,
+                new Indicator("evil.com", IndicatorType.DOMAIN),
+                Outcome.NOT_CHECKED,
+                reason,
+                null,
+                "https://example.org/" + source,
+                null,
                 Instant.parse("2026-01-15T10:00:00Z"));
     }
 
@@ -146,6 +192,7 @@ class VerdictRuleTest {
                 "VirusTotal",
                 new Indicator("evil.com", IndicatorType.DOMAIN),
                 Outcome.NOT_SEEN,
+                null,
                 null,
                 "https://www.virustotal.com/gui/domain/evil.com",
                 "{}",

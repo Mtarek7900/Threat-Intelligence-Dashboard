@@ -1,4 +1,4 @@
-import type { IndicatorType, Lookup, Outcome, SourceResult, Verdict } from './api/lookups'
+import type { IndicatorType, Lookup, NotCheckedReason, Outcome, SourceResult, Verdict } from './api/lookups'
 
 const indicatorTypeLabels: Record<IndicatorType, string> = {
   IP_ADDRESS: 'IP address',
@@ -23,6 +23,14 @@ const verdictStyles: Record<Verdict, string> = {
 const outcomeLabels: Record<Outcome, string> = {
   SEEN: 'Seen',
   NOT_SEEN: 'Not Seen',
+  NOT_CHECKED: 'Not Checked',
+}
+
+const notCheckedReasonLabels: Record<NotCheckedReason, string> = {
+  TIMEOUT: 'timed out',
+  SOURCE_ERROR: 'Source error',
+  RATE_LIMITED: 'rate limited',
+  MISSING_API_KEY: 'missing API key',
 }
 
 export function LookupResult({ lookup }: { lookup: Lookup }) {
@@ -39,6 +47,12 @@ export function LookupResult({ lookup }: { lookup: Lookup }) {
         <div className={`mt-4 rounded-lg border px-4 py-3 ${verdictStyles[lookup.verdict]}`}>
           <p className="text-sm">Verdict</p>
           <p className="text-2xl font-semibold">{verdictLabels[lookup.verdict]}</p>
+          {lookup.partial && (
+            <p className="mt-1 text-sm">
+              Partial Verdict: {lookup.sourcesNotChecked.join(', ')}{' '}
+              {lookup.sourcesNotChecked.length === 1 ? 'was' : 'were'} Not Checked
+            </p>
+          )}
         </div>
 
         <section aria-labelledby="why" className="mt-4">
@@ -72,6 +86,7 @@ function SourcePanel({ result }: { result: SourceResult }) {
         </h2>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-sm text-slate-700">
           {outcomeLabels[result.outcome]}
+          {result.notCheckedReason && `: ${notCheckedReasonLabels[result.notCheckedReason]}`}
         </span>
       </div>
 
@@ -93,12 +108,14 @@ function SourcePanel({ result }: { result: SourceResult }) {
         Open in {result.source}
       </a>
 
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-slate-500">Raw response</summary>
-        <pre className="mt-2 max-h-96 overflow-auto rounded bg-slate-50 p-3 text-xs text-slate-800">
-          {prettyJson(result.rawResponse)}
-        </pre>
-      </details>
+      {result.rawResponse !== null && (
+        <details className="mt-3 text-sm">
+          <summary className="cursor-pointer text-slate-500">Raw response</summary>
+          <pre className="mt-2 max-h-96 overflow-auto rounded bg-slate-50 p-3 text-xs text-slate-800">
+            {prettyJson(result.rawResponse)}
+          </pre>
+        </details>
+      )}
     </section>
   )
 }
