@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mtarek7900.tid.indicator.Indicator;
 import io.github.mtarek7900.tid.indicator.IndicatorType;
-import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
@@ -14,13 +13,15 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /** The VirusTotal v3 API. It covers every Indicator Type. */
+// Sources are asked, explained and shown in this order: VirusTotal first, then AbuseIPDB
 @Component
+@Order(1)
 class VirusTotal implements Source {
 
     private static final String NAME = "VirusTotal";
@@ -37,11 +38,7 @@ class VirusTotal implements Source {
             SourcesProperties sources,
             ObjectMapper json,
             Clock clock) {
-        // A call the Lookup has stopped waiting for must not hold its connection open forever
-        var requests = new JdkClientHttpRequestFactory(
-                HttpClient.newBuilder().connectTimeout(sources.timeout()).build());
-        requests.setReadTimeout(sources.timeout());
-        this.http = http.requestFactory(requests)
+        this.http = SourceHttp.withTimeouts(http, sources.timeout())
                 .baseUrl(properties.baseUrl())
                 .defaultHeader("x-apikey", properties.apiKey())
                 .build();

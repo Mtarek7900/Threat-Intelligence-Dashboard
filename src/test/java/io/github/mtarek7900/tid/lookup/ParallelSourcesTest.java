@@ -39,7 +39,7 @@ import org.springframework.web.client.RestClient;
 @Import(ParallelSourcesTest.SecondSourceConfiguration.class)
 class ParallelSourcesTest {
 
-    static final String SECOND_SOURCE_PATH = "/second-source/185.220.101.1";
+    static final String SECOND_SOURCE_PATH = "/second-source/example.com";
 
     @LocalServerPort
     int port;
@@ -60,11 +60,11 @@ class ParallelSourcesTest {
     @Test
     void theLookupTakesAsLongAsTheSlowestSourceNotAllOfThemAddedUp() {
         virusTotal.answersAfter(
-                Duration.ofMillis(1500), "ip_addresses/185.220.101.1", 200, "ip-address-malicious.json");
+                Duration.ofMillis(1500), "domains/example.com", 200, "domain-clean.json");
         secondSourceAnswersAfter(Duration.ofMillis(1500));
 
         var started = System.nanoTime();
-        var lookup = lookUp("185.220.101.1");
+        var lookup = lookUp("example.com");
         var took = Duration.ofNanos(System.nanoTime() - started);
 
         assertThat(took).isLessThan(Duration.ofMillis(2800));
@@ -74,15 +74,15 @@ class ParallelSourcesTest {
 
     @Test
     void aSourceThatHangsOnlyMakesTheVerdictPartial() {
-        virusTotal.answers("ip_addresses/185.220.101.1", 200, "ip-address-malicious.json");
+        virusTotal.answers("domains/example.com", 200, "domain-clean.json");
         secondSourceAnswersAfter(Duration.ofSeconds(5));
 
         var started = System.nanoTime();
-        var lookup = lookUp("185.220.101.1");
+        var lookup = lookUp("example.com");
         var took = Duration.ofNanos(System.nanoTime() - started);
 
         assertThat(took).isLessThan(Duration.ofSeconds(3));
-        assertThat(lookup.get("verdict").asText()).isEqualTo("MALICIOUS");
+        assertThat(lookup.get("verdict").asText()).isEqualTo("CLEAN");
         assertThat(lookup.get("partial").asBoolean()).isTrue();
         assertThat(lookup.get("sourcesNotChecked")).containsExactly(new TextNode("Second Source"));
     }

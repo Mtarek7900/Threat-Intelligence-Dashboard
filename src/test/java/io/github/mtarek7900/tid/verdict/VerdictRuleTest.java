@@ -6,6 +6,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import io.github.mtarek7900.tid.indicator.Indicator;
 import io.github.mtarek7900.tid.indicator.IndicatorType;
+import io.github.mtarek7900.tid.source.AbuseIpdbFacts;
 import io.github.mtarek7900.tid.source.NotCheckedReason;
 import io.github.mtarek7900.tid.source.Outcome;
 import io.github.mtarek7900.tid.source.SourceResult;
@@ -21,7 +22,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class VerdictRuleTest {
 
-    static final VerdictThresholds DEFAULTS = new VerdictThresholds(new VerdictThresholds.VirusTotal(3, 1));
+    static final VerdictThresholds.AbuseIpdb ABUSEIPDB_DEFAULTS = new VerdictThresholds.AbuseIpdb(75, 25);
+
+    static final VerdictThresholds DEFAULTS =
+            new VerdictThresholds(new VerdictThresholds.VirusTotal(3, 1), ABUSEIPDB_DEFAULTS);
 
     final VerdictRule rule = new VerdictRule(DEFAULTS);
 
@@ -37,6 +41,67 @@ class VerdictRuleTest {
         var decision = rule.decide(List.of(virusTotalSeen(flagged)));
 
         assertThat(decision.readings()).singleElement().extracting(Reading::signal).isEqualTo(signal);
+    }
+
+    @ParameterizedTest(name = "AbuseIPDB confidence {0}% -> {1}")
+    @CsvSource(textBlock = """
+            0,   NONE
+            24,  NONE
+            25,  SUSPICIOUS
+            74,  SUSPICIOUS
+            75,  MALICIOUS
+            100, MALICIOUS
+            """)
+    void abuseIpdbGivesASignalByItsAbuseConfidence(int confidence, Signal signal) {
+        var decision = rule.decide(List.of(abuseIpdbSeen(confidence)));
+
+        assertThat(decision.readings()).singleElement().extracting(Reading::signal).isEqualTo(signal);
+    }
+
+    @ParameterizedTest(name = "Malicious at {0}%, Suspicious at {1}%: {2}% -> {3}")
+    @CsvSource(textBlock = """
+            90, 50, 49, NONE
+            90, 50, 50, SUSPICIOUS
+            90, 50, 89, SUSPICIOUS
+            90, 50, 90, MALICIOUS
+            """)
+    void abuseIpdbThresholdsComeFromConfiguration(int malicious, int suspicious, int confidence, Signal signal) {
+        var configured = new VerdictRule(new VerdictThresholds(
+                DEFAULTS.virustotal(), new VerdictThresholds.AbuseIpdb(malicious, suspicious)));
+
+        assertThat(configured.decide(List.of(abuseIpdbSeen(confidence))).readings())
+                .singleElement()
+                .extracting(Reading::signal)
+                .isEqualTo(signal);
+    }
+
+    @ParameterizedTest(name = "Malicious at {0}%, Suspicious at {1}%")
+    @CsvSource({"75, 0", "0, 25", "101, 25", "75, 101", "50, 60"})
+    void abuseIpdbThresholdsOutsideOneToAHundredPercentAreRefused(int malicious, int suspicious) {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new VerdictThresholds.AbuseIpdb(malicious, suspicious))
+                .withMessageMatching(".*(1% to 100%|above the Malicious one).*");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void theWorstSignalAcrossSourcesWins(String combination, List<SourceResult> results, Verdict verdict) {
+        assertThat(rule.decide(results).verdict()).isEqualTo(verdict);
+    }
+
+    static Stream<Arguments> theWorstSignalAcrossSourcesWins() {
+        return Stream.of(
+                arguments("VirusTotal no Signal + AbuseIPDB Malicious", List.of(virusTotalSeen(0), abuseIpdbSeen(90)), Verdict.MALICIOUS),
+                arguments("VirusTotal Malicious + AbuseIPDB no Signal", List.of(virusTotalSeen(5), abuseIpdbSeen(0)), Verdict.MALICIOUS),
+                arguments("VirusTotal Suspicious + AbuseIPDB Malicious", List.of(virusTotalSeen(1), abuseIpdbSeen(80)), Verdict.MALICIOUS),
+                arguments("VirusTotal Malicious + AbuseIPDB Suspicious", List.of(virusTotalSeen(4), abuseIpdbSeen(30)), Verdict.MALICIOUS),
+                arguments("VirusTotal Not Seen + AbuseIPDB Suspicious", List.of(virusTotalNotSeen(), abuseIpdbSeen(30)), Verdict.SUSPICIOUS),
+                arguments("VirusTotal no Signal + AbuseIPDB Suspicious", List.of(virusTotalSeen(0), abuseIpdbSeen(30)), Verdict.SUSPICIOUS),
+                arguments("VirusTotal no Signal + AbuseIPDB Not Seen", List.of(virusTotalSeen(0), abuseIpdbNotSeen()), Verdict.CLEAN),
+                arguments("VirusTotal Not Seen + AbuseIPDB no Signal", List.of(virusTotalNotSeen(), abuseIpdbSeen(0)), Verdict.CLEAN),
+                arguments("VirusTotal Not Seen + AbuseIPDB Not Seen", List.of(virusTotalNotSeen(), abuseIpdbNotSeen()), Verdict.UNKNOWN),
+                arguments("VirusTotal Not Checked + AbuseIPDB Malicious", List.of(notChecked("VirusTotal", NotCheckedReason.TIMEOUT), abuseIpdbSeen(75)), Verdict.MALICIOUS),
+                arguments("VirusTotal Not Seen + AbuseIPDB Not Checked", List.of(virusTotalNotSeen(), notChecked("AbuseIPDB", NotCheckedReason.TIMEOUT)), Verdict.UNKNOWN));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -98,7 +163,8 @@ class VerdictRuleTest {
             1, 1, 1, MALICIOUS
             """)
     void thresholdsComeFromConfiguration(int malicious, int suspicious, int flagged, Signal signal) {
-        var configured = new VerdictRule(new VerdictThresholds(new VerdictThresholds.VirusTotal(malicious, suspicious)));
+        var configured = new VerdictRule(new VerdictThresholds(
+                new VerdictThresholds.VirusTotal(malicious, suspicious), ABUSEIPDB_DEFAULTS));
 
         assertThat(configured.decide(List.of(virusTotalSeen(flagged))).readings())
                 .singleElement()
@@ -107,11 +173,11 @@ class VerdictRuleTest {
     }
 
     @ParameterizedTest(name = "Malicious at {0}, Suspicious at {1}")
-    @CsvSource({"3, 0", "0, 1", "3, -1"})
-    void thresholdsBelowOneEngineAreRefused(int malicious, int suspicious) {
+    @CsvSource({"3, 0", "0, 1", "3, -1", "3, 4"})
+    void thresholdsBelowOneEngineOrSuspiciousAboveMaliciousAreRefused(int malicious, int suspicious) {
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> new VerdictThresholds.VirusTotal(malicious, suspicious))
-                .withMessageContaining("at least 1 engine");
+                .withMessageMatching(".*(at least 1 engine|above the Malicious one).*");
     }
 
     @ParameterizedTest(name = "{1}")
@@ -129,6 +195,10 @@ class VerdictRuleTest {
                 arguments(virusTotalSeen(2), "VirusTotal: 2 of 94 engines flagged it. 1 to 2 is Suspicious."),
                 arguments(virusTotalSeen(0), "VirusTotal: 0 of 94 engines flagged it. No Signal."),
                 arguments(virusTotalNotSeen(), "VirusTotal has no record of it. No Signal."),
+                arguments(abuseIpdbSeen(100), "AbuseIPDB: abuse confidence 100%. 75% or more is Malicious."),
+                arguments(abuseIpdbSeen(40), "AbuseIPDB: abuse confidence 40%. 25% to 74% is Suspicious."),
+                arguments(abuseIpdbSeen(0), "AbuseIPDB: abuse confidence 0%. No Signal."),
+                arguments(abuseIpdbNotSeen(), "AbuseIPDB has no record of it. No Signal."),
                 arguments(notChecked("VirusTotal", NotCheckedReason.TIMEOUT), "VirusTotal was Not Checked: it didn't answer in time."),
                 arguments(notChecked("VirusTotal", NotCheckedReason.SOURCE_ERROR), "VirusTotal was Not Checked: it answered with an error."),
                 arguments(notChecked("VirusTotal", NotCheckedReason.RATE_LIMITED), "VirusTotal was Not Checked: it is limiting how often it can be asked."),
@@ -141,7 +211,8 @@ class VerdictRuleTest {
             5 | 1 | VirusTotal: 2 of 94 engines flagged it. 1 to 4 is Suspicious.
             """)
     void whyQuotesTheConfiguredThresholds(int malicious, int suspicious, String why) {
-        var configured = new VerdictRule(new VerdictThresholds(new VerdictThresholds.VirusTotal(malicious, suspicious)));
+        var configured = new VerdictRule(new VerdictThresholds(
+                new VerdictThresholds.VirusTotal(malicious, suspicious), ABUSEIPDB_DEFAULTS));
 
         assertThat(configured.decide(List.of(virusTotalSeen(2))).readings())
                 .singleElement()
@@ -169,6 +240,32 @@ class VerdictRuleTest {
                 null,
                 new VirusTotalFacts(flagged, 94, Instant.parse("2026-01-14T08:30:00Z")),
                 "https://www.virustotal.com/gui/domain/evil.com",
+                "{}",
+                Instant.parse("2026-01-15T10:00:00Z"));
+    }
+
+    static SourceResult abuseIpdbSeen(int confidence) {
+        return new SourceResult(
+                UUID.randomUUID(),
+                "AbuseIPDB",
+                new Indicator("185.220.101.1", IndicatorType.IP_ADDRESS),
+                Outcome.SEEN,
+                null,
+                new AbuseIpdbFacts(confidence, 12, "DE", "Example ISP"),
+                "https://www.abuseipdb.com/check/185.220.101.1",
+                "{}",
+                Instant.parse("2026-01-15T10:00:00Z"));
+    }
+
+    static SourceResult abuseIpdbNotSeen() {
+        return new SourceResult(
+                UUID.randomUUID(),
+                "AbuseIPDB",
+                new Indicator("185.220.101.1", IndicatorType.IP_ADDRESS),
+                Outcome.NOT_SEEN,
+                null,
+                null,
+                "https://www.abuseipdb.com/check/185.220.101.1",
                 "{}",
                 Instant.parse("2026-01-15T10:00:00Z"));
     }

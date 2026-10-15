@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.github.mtarek7900.tid.FakeAbuseIpdb;
 import io.github.mtarek7900.tid.FakeVirusTotal;
 import io.github.mtarek7900.tid.IntegrationTest;
 import java.util.Map;
@@ -26,6 +27,9 @@ class LookupVerdictTest {
     @Autowired
     FakeVirusTotal virusTotal;
 
+    @Autowired
+    FakeAbuseIpdb abuseIpdb;
+
     RestClient api;
 
     @BeforeEach
@@ -39,6 +43,7 @@ class LookupVerdictTest {
     @Test
     void anIpAddressThatVirusTotalEnginesFlagIsMalicious() {
         virusTotal.answers("ip_addresses/185.220.101.1", 200, "ip-address-malicious.json");
+        abuseIpdb.answers("185.220.101.1", 200, "no-reports.json");
 
         var response = lookUp("185.220.101[.]1");
 
@@ -46,9 +51,8 @@ class LookupVerdictTest {
         var lookup = response.getBody();
         assertThat(lookup.get("verdict").asText()).isEqualTo("MALICIOUS");
         assertThat(lookup.get("why"))
-                .containsExactly(new TextNode("VirusTotal: 15 of 92 engines flagged it. 3 or more is Malicious."));
-        assertThat(lookup.get("sourcesAsked")).containsExactly(new TextNode("VirusTotal"));
-        assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
+                .startsWith(new TextNode("VirusTotal: 15 of 92 engines flagged it. 3 or more is Malicious."));
+        assertThat(lookup.get("sourceResults")).first().satisfies(result -> {
             assertThat(result.get("source").asText()).isEqualTo("VirusTotal");
             assertThat(result.get("outcome").asText()).isEqualTo("SEEN");
             assertThat(result.get("signal").asText()).isEqualTo("MALICIOUS");
@@ -101,18 +105,19 @@ class LookupVerdictTest {
     @Test
     void anIpAddressVirusTotalHasNeverAnalysedIsUnknownRatherThanClean() {
         virusTotal.answers("ip_addresses/203.0.114.7", 200, "ip-address-never-analysed.json");
+        abuseIpdb.answers("203.0.114.7", 200, "no-reports.json");
 
         var lookup = lookUp("203.0.114.7").getBody();
 
         assertThat(lookup.get("verdict").asText()).isEqualTo("UNKNOWN");
         assertThat(lookup.get("sourceResults"))
-                .singleElement()
-                .satisfies(result -> assertThat(result.get("outcome").asText()).isEqualTo("NOT_SEEN"));
+                .allSatisfy(result -> assertThat(result.get("outcome").asText()).isEqualTo("NOT_SEEN"));
     }
 
     @Test
     void theLookupHistoryKeepsTheVerdict() {
         virusTotal.answers("ip_addresses/185.220.101.1", 200, "ip-address-malicious.json");
+        abuseIpdb.answers("185.220.101.1", 200, "no-reports.json");
         var lookup = lookUp("185.220.101.1").getBody();
 
         var history = api.get().uri("/api/lookups").retrieve().body(JsonNode.class);

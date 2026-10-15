@@ -13,8 +13,15 @@ tid:
     virustotal:
       base-url: ${VIRUSTOTAL_BASE_URL:https://www.virustotal.com}
       api-key: ${VIRUSTOTAL_API_KEY:}
+    abuseipdb:
+      base-url: ${ABUSEIPDB_BASE_URL:https://api.abuseipdb.com}
+      api-key: ${ABUSEIPDB_API_KEY:}
   verdict:
     virustotal:
       # Engines flagging the Indicator for a Malicious Signal, and for a Suspicious one below that
       malicious-engines: ${VERDICT_VIRUSTOTAL_MALICIOUS_ENGINES:3}
       suspicious-engines: ${VERDICT_VIRUSTOTAL_SUSPICIOUS_ENGINES:1}
+    abuseipdb:
+      # Abuse confidence (%) for a Malicious Signal, and for a Suspicious one below that
+      malicious-confidence: ${VERDICT_ABUSEIPDB_MALICIOUS_CONFIDENCE:75}
+      suspicious-confidence: ${VERDICT_ABUSEIPDB_SUSPICIOUS_CONFIDENCE:25}

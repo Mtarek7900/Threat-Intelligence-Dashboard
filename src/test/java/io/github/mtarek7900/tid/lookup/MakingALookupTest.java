@@ -3,6 +3,7 @@ package io.github.mtarek7900.tid.lookup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.mtarek7900.tid.FakeAbuseIpdb;
 import io.github.mtarek7900.tid.FakeVirusTotal;
 import io.github.mtarek7900.tid.IntegrationTest;
 import java.util.Map;
@@ -27,6 +28,9 @@ class MakingALookupTest {
     @Autowired
     FakeVirusTotal virusTotal;
 
+    @Autowired
+    FakeAbuseIpdb abuseIpdb;
+
     RestClient api;
 
     @BeforeEach
@@ -46,6 +50,7 @@ class MakingALookupTest {
     void aValidIndicatorMakesALookupOfTheNormalisedIndicator(
             String input, String indicator, String type, String virusTotalPath, int status, String recording) {
         virusTotal.answers(virusTotalPath, status, recording);
+        abuseIpdb.answers(indicator, 200, "no-reports.json");
 
         var response = lookUp(input);
 

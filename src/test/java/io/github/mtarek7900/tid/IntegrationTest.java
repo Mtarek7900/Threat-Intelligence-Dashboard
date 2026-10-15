@@ -21,7 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 /**
  * Seam 1: the whole app on a random port, real HTTP, PostgreSQL in Testcontainers, Sources faked
  * by WireMock and a {@link TestClock} in place of the system clock. Inject the TestClock to control
- * time and {@link FakeVirusTotal} to say what VirusTotal answers. Every test starts with no Lookups,
+ * time, and {@link FakeVirusTotal} and {@link FakeAbuseIpdb} to say what the Sources answer. Every test starts with no Lookups,
  * no Source Results and nothing programmed into the fake Sources, because all integration tests
  * share one database and one WireMock server. Each Source gets {@link #SOURCE_TIMEOUT} to answer;
  * a test class can override these properties with its own {@code @TestPropertySource}.
@@ -37,6 +37,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @TestPropertySource(
         properties = {
             "tid.sources.virustotal.api-key=" + FakeVirusTotal.API_KEY,
+            "tid.sources.abuseipdb.api-key=" + FakeAbuseIpdb.API_KEY,
             "tid.sources.timeout=" + IntegrationTest.SOURCE_TIMEOUT
         })
 @Sql(statements = "truncate lookup_source_result, lookup, source_result")

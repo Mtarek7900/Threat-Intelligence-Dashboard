@@ -30,20 +30,28 @@ export type VirusTotalFacts = {
   lastAnalysedAt: string
 }
 
+export type AbuseIpdbFacts = {
+  abuseConfidence: number
+  totalReports: number
+  countryCode: string | null
+  isp: string | null
+}
+
 /**
  * A Source Result the Lookup used. `facts` is null unless the Source has Seen the Indicator;
  * `notCheckedReason` is null and `rawResponse` present unless it was Not Checked.
  */
 export type SourceResult = {
-  source: 'VirusTotal'
   outcome: Outcome
   notCheckedReason: NotCheckedReason | null
   signal: Signal
-  facts: VirusTotalFacts | null
   link: string
   fetchedAt: string
   rawResponse: string | null
-}
+} & (
+  | { source: 'VirusTotal'; facts: VirusTotalFacts | null }
+  | { source: 'AbuseIPDB'; facts: AbuseIpdbFacts | null }
+)
 
 export type Lookup = {
   id: string

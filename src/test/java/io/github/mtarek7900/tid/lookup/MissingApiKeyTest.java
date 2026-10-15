@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.github.mtarek7900.tid.FakeAbuseIpdb;
 import io.github.mtarek7900.tid.FakeVirusTotal;
 import io.github.mtarek7900.tid.IntegrationTest;
 import java.util.Map;
@@ -16,7 +17,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestClient;
 
 @IntegrationTest
-@TestPropertySource(properties = "tid.sources.virustotal.api-key=")
+@TestPropertySource(properties = {"tid.sources.virustotal.api-key=", "tid.sources.abuseipdb.api-key="})
 class MissingApiKeyTest {
 
     @LocalServerPort
@@ -25,8 +26,11 @@ class MissingApiKeyTest {
     @Autowired
     FakeVirusTotal virusTotal;
 
+    @Autowired
+    FakeAbuseIpdb abuseIpdb;
+
     @Test
-    void aSourceWithNoApiKeyIsNotCheckedAndNeverAsked() {
+    void sourcesWithNoApiKeyAreNotCheckedAndNeverAsked() {
         var response = RestClient.create("http://localhost:" + port)
                 .post()
                 .uri("/api/lookups")
@@ -39,11 +43,15 @@ class MissingApiKeyTest {
         var lookup = response.getBody();
         assertThat(lookup.get("verdict").asText()).isEqualTo("UNKNOWN");
         assertThat(lookup.get("partial").asBoolean()).isTrue();
+        assertThat(lookup.get("sourcesNotChecked"))
+                .containsExactly(new TextNode("VirusTotal"), new TextNode("AbuseIPDB"));
         assertThat(lookup.get("why"))
-                .containsExactly(new TextNode("VirusTotal was Not Checked: no API key is configured."));
+                .containsExactly(
+                        new TextNode("VirusTotal was Not Checked: no API key is configured."),
+                        new TextNode("AbuseIPDB was Not Checked: no API key is configured."));
         assertThat(lookup.get("sourceResults"))
-                .singleElement()
-                .satisfies(result -> assertThat(result.get("notCheckedReason").asText()).isEqualTo("MISSING_API_KEY"));
+                .allSatisfy(result -> assertThat(result.get("notCheckedReason").asText()).isEqualTo("MISSING_API_KEY"));
         assertThat(virusTotal.requestsReceived()).isZero();
+        assertThat(abuseIpdb.checksReceived()).isZero();
     }
 }

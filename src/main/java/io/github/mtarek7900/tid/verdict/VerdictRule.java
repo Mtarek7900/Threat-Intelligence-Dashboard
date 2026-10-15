@@ -1,5 +1,6 @@
 package io.github.mtarek7900.tid.verdict;
 
+import io.github.mtarek7900.tid.source.AbuseIpdbFacts;
 import io.github.mtarek7900.tid.source.NotCheckedReason;
 import io.github.mtarek7900.tid.source.Outcome;
 import io.github.mtarek7900.tid.source.SourceResult;
@@ -56,6 +57,7 @@ public final class VerdictRule {
         }
         return switch (result.facts()) {
             case VirusTotalFacts facts -> read(result, facts, thresholds.virustotal());
+            case AbuseIpdbFacts facts -> read(result, facts, thresholds.abuseipdb());
         };
     }
 
@@ -67,9 +69,31 @@ public final class VerdictRule {
                     result, Signal.MALICIOUS, flagged + thresholds.maliciousEngines() + " or more is Malicious.");
         }
         if (facts.enginesFlagged() >= thresholds.suspiciousEngines()) {
-            return new Reading(result, Signal.SUSPICIOUS, flagged + range(thresholds) + " is Suspicious.");
+            return new Reading(
+                    result,
+                    Signal.SUSPICIOUS,
+                    flagged + range(thresholds.suspiciousEngines(), thresholds.maliciousEngines(), "")
+                            + " is Suspicious.");
         }
         return new Reading(result, Signal.NONE, flagged + "No Signal.");
+    }
+
+    private static Reading read(SourceResult result, AbuseIpdbFacts facts, VerdictThresholds.AbuseIpdb thresholds) {
+        var confidence = "%s: abuse confidence %d%%. ".formatted(result.source(), facts.abuseConfidence());
+        if (facts.abuseConfidence() >= thresholds.maliciousConfidence()) {
+            return new Reading(
+                    result,
+                    Signal.MALICIOUS,
+                    confidence + thresholds.maliciousConfidence() + "% or more is Malicious.");
+        }
+        if (facts.abuseConfidence() >= thresholds.suspiciousConfidence()) {
+            return new Reading(
+                    result,
+                    Signal.SUSPICIOUS,
+                    confidence + range(thresholds.suspiciousConfidence(), thresholds.maliciousConfidence(), "%")
+                            + " is Suspicious.");
+        }
+        return new Reading(result, Signal.NONE, confidence + "No Signal.");
     }
 
     private static String because(NotCheckedReason reason) {
@@ -81,10 +105,11 @@ public final class VerdictRule {
         };
     }
 
-    private static String range(VerdictThresholds.VirusTotal thresholds) {
-        var highest = thresholds.maliciousEngines() - 1;
-        return thresholds.suspiciousEngines() == highest
-                ? String.valueOf(highest)
-                : thresholds.suspiciousEngines() + " to " + highest;
+    /** The values that give a Suspicious Signal: from its threshold up to just below Malicious. */
+    private static String range(int suspicious, int malicious, String unit) {
+        var highest = malicious - 1;
+        return suspicious == highest
+                ? highest + unit
+                : suspicious + unit + " to " + highest + unit;
     }
 }

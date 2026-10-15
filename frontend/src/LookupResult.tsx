@@ -90,14 +90,7 @@ function SourcePanel({ result }: { result: SourceResult }) {
         </span>
       </div>
 
-      {result.facts && (
-        <ul className="mt-2 text-slate-700">
-          <li>
-            {result.facts.enginesFlagged} of {result.facts.enginesTotal} engines flagged it
-          </li>
-          <li>Last analysed {formatUtc(result.facts.lastAnalysedAt)}</li>
-        </ul>
-      )}
+      <SourceFacts result={result} />
 
       <a
         href={result.link}
@@ -118,6 +111,42 @@ function SourcePanel({ result }: { result: SourceResult }) {
       )}
     </section>
   )
+}
+
+/** The key facts each Source reported, when it has Seen the Indicator. */
+function SourceFacts({ result }: { result: SourceResult }) {
+  switch (result.source) {
+    case 'VirusTotal':
+      return (
+        result.facts && (
+          <ul className="mt-2 text-slate-700">
+            <li>
+              {result.facts.enginesFlagged} of {result.facts.enginesTotal} engines flagged it
+            </li>
+            <li>Last analysed {formatUtc(result.facts.lastAnalysedAt)}</li>
+          </ul>
+        )
+      )
+    case 'AbuseIPDB':
+      return (
+        result.facts && (
+          <ul className="mt-2 text-slate-700">
+            <li>
+              Abuse confidence {result.facts.abuseConfidence}% from{' '}
+              {result.facts.totalReports.toLocaleString('en')} reports
+            </li>
+            {result.facts.countryCode && <li>Country {countryName(result.facts.countryCode)}</li>}
+            {result.facts.isp && <li>ISP {result.facts.isp}</li>}
+          </ul>
+        )
+      )
+  }
+}
+
+/** E.g. "Germany (DE)", or just the code if the browser doesn't know it. */
+function countryName(code: string) {
+  const name = new Intl.DisplayNames(['en'], { type: 'region' }).of(code)
+  return name && name !== code ? `${name} (${code})` : code
 }
 
 /** E.g. "2026-01-14 08:30 UTC": the same for every Analyst, whatever their time zone. */

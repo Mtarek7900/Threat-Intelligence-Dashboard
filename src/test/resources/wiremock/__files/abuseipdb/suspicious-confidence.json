@@ -1,0 +1,18 @@
+{
+    "data": {
+        "ipAddress": "45.155.205.233",
+        "isPublic": true,
+        "ipVersion": 4,
+        "isWhitelisted": false,
+        "abuseConfidenceScore": 40,
+        "countryCode": "NL",
+        "usageType": "Data Center/Web Hosting/Transit",
+        "isp": "Example Hosting B.V.",
+        "domain": "example-hosting.nl",
+        "hostnames": [],
+        "isTor": false,
+        "totalReports": 9,
+        "numDistinctUsers": 5,
+        "lastReportedAt": "2026-10-11T07:15:40+00:00"
+    }
+}

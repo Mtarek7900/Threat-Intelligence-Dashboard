@@ -22,7 +22,7 @@ import org.springframework.web.client.RestClient;
 @IntegrationTest
 class NotCheckedTest {
 
-    static final String PATH = "ip_addresses/185.220.101.1";
+    static final String PATH = "domains/example.com";
 
     @LocalServerPort
     int port;
@@ -42,10 +42,10 @@ class NotCheckedTest {
 
     @Test
     void aSourceThatDoesNotAnswerInTimeIsNotChecked() {
-        virusTotal.answersAfter(Duration.ofSeconds(4), PATH, 200, "ip-address-malicious.json");
+        virusTotal.answersAfter(Duration.ofSeconds(4), PATH, 200, "domain-clean.json");
 
         var started = System.nanoTime();
-        var response = lookUp("185.220.101.1");
+        var response = lookUp("example.com");
         var took = Duration.ofNanos(System.nanoTime() - started);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -60,7 +60,7 @@ class NotCheckedTest {
             assertThat(result.get("outcome").asText()).isEqualTo("NOT_CHECKED");
             assertThat(result.get("notCheckedReason").asText()).isEqualTo("TIMEOUT");
             assertThat(result.get("link").asText())
-                    .isEqualTo("https://www.virustotal.com/gui/ip-address/185.220.101.1");
+                    .isEqualTo("https://www.virustotal.com/gui/domain/example.com");
             assertThat(result.get("rawResponse").isNull()).isTrue();
         });
     }
@@ -69,7 +69,7 @@ class NotCheckedTest {
     void aSourceThatAnswersWithAnErrorIsNotChecked() {
         virusTotal.failsWith(PATH, 503);
 
-        var lookup = lookUp("185.220.101.1").getBody();
+        var lookup = lookUp("example.com").getBody();
 
         assertNotChecked(lookup, "SOURCE_ERROR");
     }
@@ -78,7 +78,7 @@ class NotCheckedTest {
     void aSourceThatDropsTheConnectionIsNotChecked() {
         virusTotal.dropsConnection(PATH);
 
-        var lookup = lookUp("185.220.101.1").getBody();
+        var lookup = lookUp("example.com").getBody();
 
         assertNotChecked(lookup, "SOURCE_ERROR");
     }
@@ -87,16 +87,16 @@ class NotCheckedTest {
     void aSourceThatIsRateLimitingIsNotChecked() {
         virusTotal.answers(PATH, 429, "rate-limited.json");
 
-        var lookup = lookUp("185.220.101.1").getBody();
+        var lookup = lookUp("example.com").getBody();
 
         assertNotChecked(lookup, "RATE_LIMITED");
     }
 
     @Test
     void aLookupWhoseSourcesWereAllCheckedIsNotPartial() {
-        virusTotal.answers(PATH, 200, "ip-address-malicious.json");
+        virusTotal.answers(PATH, 200, "domain-clean.json");
 
-        var lookup = lookUp("185.220.101.1").getBody();
+        var lookup = lookUp("example.com").getBody();
 
         assertThat(lookup.get("partial").asBoolean()).isFalse();
         assertThat(lookup.get("sourcesNotChecked")).isEmpty();
@@ -105,7 +105,7 @@ class NotCheckedTest {
     @Test
     void theLookupHistoryKeepsTheVerdictOfAPartialLookup() {
         virusTotal.failsWith(PATH, 503);
-        var lookup = lookUp("185.220.101.1").getBody();
+        var lookup = lookUp("example.com").getBody();
 
         var history = api.get().uri("/api/lookups").retrieve().body(JsonNode.class);
 

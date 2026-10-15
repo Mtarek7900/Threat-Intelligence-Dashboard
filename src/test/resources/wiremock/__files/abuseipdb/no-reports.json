@@ -1,0 +1,18 @@
+{
+    "data": {
+        "ipAddress": "203.0.114.7",
+        "isPublic": true,
+        "ipVersion": 4,
+        "isWhitelisted": null,
+        "abuseConfidenceScore": 0,
+        "countryCode": "AU",
+        "usageType": "Reserved",
+        "isp": "APNIC Research and Development",
+        "domain": "apnic.net",
+        "hostnames": [],
+        "isTor": false,
+        "totalReports": 0,
+        "numDistinctUsers": 0,
+        "lastReportedAt": null
+    }
+}
