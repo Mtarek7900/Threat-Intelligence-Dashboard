@@ -53,7 +53,7 @@ class IndicatorParserTest {
             2001:4860:4860:0:0:0:0:8888|2001:4860:4860::8888
             2001:4860:4860:0000:0000:0000:0000:8888|2001:4860:4860::8888
             2001:4860:4860::8888|2001:4860:4860::8888
-            2001:0:4860:0:0:1:0:1|2001:0:4860::1:0:1
+            2606:0:4700:0:0:1:0:1|2606:0:4700::1:0:1
             """)
     void normalisesWhitespaceAndCase(String raw, String normalised) {
         assertThat(IndicatorParser.parse(raw.translateEscapes()))
@@ -76,6 +76,7 @@ class IndicatorParserTest {
             172.31.255.255      | a private address (172.16.0.0/12)
             192.0.0.8           | an IETF protocol address (192.0.0.0/24)
             192.0.2.1           | a documentation address (192.0.2.0/24)
+            192.88.99.1         | a 6to4 relay anycast address (192.88.99.0/24)
             192.168.1.1         | a private address (192.168.0.0/16)
             198.18.0.1          | a benchmarking address (198.18.0.0/15)
             198.19.255.255      | a benchmarking address (198.18.0.0/15)
@@ -97,6 +98,15 @@ class IndicatorParserTest {
             febf::1             | a link-local address (fe80::/10)
             fec0::1             | a site-local address (fec0::/10)
             ff02::1             | a multicast address (ff00::/8)
+            2001::1             | an IETF protocol address (2001::/23)
+            2001:2::1           | an IETF protocol address (2001::/23)
+            ::2                 | outside the global unicast range (2000::/3)
+            ::8.8.8.8           | outside the global unicast range (2000::/3)
+            1::                 | outside the global unicast range (2000::/3)
+            64:ff9b:1::1        | outside the global unicast range (2000::/3)
+            5f00::1             | outside the global unicast range (2000::/3)
+            abcd::1             | outside the global unicast range (2000::/3)
+            fbff::1             | outside the global unicast range (2000::/3)
             """)
     void rejectsReservedIpAddresses(String raw, String description) {
         assertThat(IndicatorParser.parse(raw))
@@ -126,7 +136,8 @@ class IndicatorParserTest {
             2001:4860:4860::8888
             2606:4700:4700::1111
             2001:db9::1
-            fbff::1
+            2001:200::1
+            3ffe::1
             """)
     void acceptsPublicIpAddressesNextToReservedRanges(String raw) {
         assertThat(IndicatorParser.parse(raw)).isEqualTo(new Accepted(new Indicator(raw, IndicatorType.IP_ADDRESS)));
@@ -165,6 +176,9 @@ class IndicatorParserTest {
             evil.com/login.php
             evil[.]com/login
             1.2.3.4/admin
+            1.2.3.4:80/admin
+            evil.com:8080/x
+            [2001:db8::1]/x
             """)
     void rejectsUrlsWithASpecificMessage(String raw) {
         assertThat(IndicatorParser.parse(raw))

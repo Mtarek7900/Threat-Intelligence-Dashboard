@@ -36,6 +36,7 @@ public final class IndicatorParser {
             ReservedRange.of("172.16.0.0/12", "a private address"),
             ReservedRange.of("192.0.0.0/24", "an IETF protocol address"),
             ReservedRange.of("192.0.2.0/24", "a documentation address"),
+            ReservedRange.of("192.88.99.0/24", "a 6to4 relay anycast address"),
             ReservedRange.of("192.168.0.0/16", "a private address"),
             ReservedRange.of("198.18.0.0/15", "a benchmarking address"),
             ReservedRange.of("198.51.100.0/24", "a documentation address"),
@@ -46,12 +47,17 @@ public final class IndicatorParser {
             ReservedRange.of("::1/128", "a loopback address"),
             ReservedRange.of("::ffff:0:0/96", "an IPv4-mapped address"),
             ReservedRange.of("100::/64", "a discard address"),
+            ReservedRange.of("2001::/23", "an IETF protocol address"),
             ReservedRange.of("2001:db8::/32", "a documentation address"),
             ReservedRange.of("3fff::/20", "a documentation address"),
             ReservedRange.of("fc00::/7", "a unique local (private) address"),
             ReservedRange.of("fe80::/10", "a link-local address"),
             ReservedRange.of("fec0::/10", "a site-local address"),
             ReservedRange.of("ff00::/8", "a multicast address"));
+
+    /** IPv6 addresses outside this are unallocated or special-purpose, so they're rejected too. */
+    private static final ReservedRange GLOBAL_UNICAST =
+            ReservedRange.of("2000::/3", "outside the global unicast range");
 
     private IndicatorParser() {}
 
@@ -86,16 +92,24 @@ public final class IndicatorParser {
         return new Accepted(new Indicator(value, type));
     }
 
-    private static ParseResult acceptPublicIp(String value, byte[] address, String normalised) {
+    /** {@code refanged} is the address as the Analyst wrote it, for the rejection message. */
+    private static ParseResult acceptPublicIp(String refanged, byte[] address, String normalised) {
         for (var range : RESERVED_RANGES) {
             if (range.contains(address)) {
-                return new Rejected(
-                        Rejection.RESERVED_IP_ADDRESS,
-                        value + " is " + range.description() + " (" + range.cidr() + ")."
-                                + " Sources only know about public IP addresses.");
+                return rejectReserved(refanged, range);
             }
         }
+        if (address.length == 16 && !GLOBAL_UNICAST.contains(address)) {
+            return rejectReserved(refanged, GLOBAL_UNICAST);
+        }
         return accept(normalised, IndicatorType.IP_ADDRESS);
+    }
+
+    private static ParseResult rejectReserved(String refanged, ReservedRange range) {
+        return new Rejected(
+                Rejection.RESERVED_IP_ADDRESS,
+                refanged + " is " + range.description() + " (" + range.cidr() + ")."
+                        + " Sources only know about public IP addresses.");
     }
 
     private static String refang(String value) {
@@ -104,7 +118,10 @@ public final class IndicatorParser {
                 .replaceFirst("(?i)^hxxp(s?)://", "http$1://");
     }
 
-    /** Has a scheme, like https://evil.com, or a path after a host, like evil.com/login. */
+    /**
+     * Has a scheme, like https://evil.com, or a path after a host and optional port, like
+     * evil.com:8080/login or [2001:db8::1]/login.
+     */
     private static boolean isUrl(String value) {
         if (URL_SCHEME.matcher(value).matches()) {
             return true;
@@ -114,6 +131,10 @@ public final class IndicatorParser {
             return false;
         }
         var host = value.substring(0, slash);
+        if (host.startsWith("[") && host.endsWith("]")) {
+            return parseIpv6(host.substring(1, host.length() - 1)) != null;
+        }
+        host = host.replaceFirst(":\\d{1,5}$", "");
         return parseIpv4(host) != null || normaliseDomain(host) != null;
     }
 

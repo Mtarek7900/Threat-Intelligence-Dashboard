@@ -45,7 +45,7 @@ test('rejected input shows the reason it was rejected', async () => {
       HttpResponse.json(
         {
           status: 400,
-          detail: 'URLs aren’t supported yet. Look up the URL’s domain or IP address instead.',
+          detail: "URLs aren't supported yet. Look up the URL's domain or IP address instead.",
           reason: 'URL_NOT_SUPPORTED',
         },
         { status: 400, headers: { 'Content-Type': 'application/problem+json' } },
@@ -59,7 +59,7 @@ test('rejected input shows the reason it was rejected', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Look up' }))
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
-    'URLs aren’t supported yet. Look up the URL’s domain or IP address instead.',
+    "URLs aren't supported yet. Look up the URL's domain or IP address instead.",
   )
   expect(screen.queryByRole('region', { name: 'Lookup' })).not.toBeInTheDocument()
 })

@@ -1,8 +1,8 @@
 export type LookupHistoryEntry = {
   id: string
   indicator: string
-  indicatorType: string
-  verdict: string
+  indicatorType: IndicatorType
+  verdict: Verdict
   lookedUpAt: string
 }
 

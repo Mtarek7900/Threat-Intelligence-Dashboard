@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { makeLookup, type IndicatorType, type Lookup, type Verdict } from './api/lookups'
+import { makeLookup, type IndicatorType, type LookupOutcome, type Verdict } from './api/lookups'
 
 const indicatorTypeLabels: Record<IndicatorType, string> = {
   IP_ADDRESS: 'IP address',
@@ -14,12 +14,7 @@ const verdictLabels: Record<Verdict, string> = {
   UNKNOWN: 'Unknown',
 }
 
-type LookupState =
-  | { status: 'idle' }
-  | { status: 'looking-up' }
-  | { status: 'made'; lookup: Lookup }
-  | { status: 'rejected'; message: string }
-  | { status: 'failed' }
+type LookupState = { status: 'idle' } | { status: 'looking-up' } | LookupOutcome | { status: 'failed' }
 
 export function LookupForm() {
   const [input, setInput] = useState('')
