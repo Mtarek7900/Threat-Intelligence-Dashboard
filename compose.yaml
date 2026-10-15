@@ -6,8 +6,8 @@ services:
       POSTGRES_USER: tid
       POSTGRES_PASSWORD: tid
     ports:
-      # Published so `./mvnw spring-boot:run` can use it during development
-      - "5432:5432"
+      # Published so `./mvnw spring-boot:run` can use it; set DB_PORT if 5432 is taken
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - tid-db:/var/lib/postgresql/data
     healthcheck:

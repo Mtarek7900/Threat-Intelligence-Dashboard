@@ -19,11 +19,11 @@ import org.springframework.context.annotation.Primary;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import({TestcontainersConfiguration.class, IntegrationTest.ClockConfiguration.class})
+@Import({TestcontainersConfiguration.class, IntegrationTest.TestClockConfiguration.class})
 public @interface IntegrationTest {
 
     @TestConfiguration(proxyBeanMethods = false)
-    class ClockConfiguration {
+    class TestClockConfiguration {
 
         @Bean
         @Primary
