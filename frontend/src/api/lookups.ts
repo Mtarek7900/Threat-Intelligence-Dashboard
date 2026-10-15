@@ -37,6 +37,12 @@ export type AbuseIpdbFacts = {
   isp: string | null
 }
 
+export type OtxFacts = {
+  pulseCount: number
+  /** The pulses OTX listed, which can be fewer than `pulseCount`. */
+  pulses: { name: string; tags: string[] }[]
+}
+
 /**
  * A Source Result the Lookup used. `facts` is null unless the Source has Seen the Indicator;
  * `notCheckedReason` is null and `rawResponse` present unless it was Not Checked.
@@ -51,6 +57,7 @@ export type SourceResult = {
 } & (
   | { source: 'VirusTotal'; facts: VirusTotalFacts | null }
   | { source: 'AbuseIPDB'; facts: AbuseIpdbFacts | null }
+  | { source: 'AlienVault OTX'; facts: OtxFacts | null }
 )
 
 export type Lookup = {

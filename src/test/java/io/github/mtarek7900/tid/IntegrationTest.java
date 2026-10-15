@@ -21,9 +21,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 /**
  * Seam 1: the whole app on a random port, real HTTP, PostgreSQL in Testcontainers, Sources faked
  * by WireMock and a {@link TestClock} in place of the system clock. Inject the TestClock to control
- * time, and {@link FakeVirusTotal} and {@link FakeAbuseIpdb} to say what the Sources answer. Every test starts with no Lookups,
- * no Source Results and nothing programmed into the fake Sources, because all integration tests
- * share one database and one WireMock server. Each Source gets {@link #SOURCE_TIMEOUT} to answer;
+ * time, and {@link FakeVirusTotal}, {@link FakeAbuseIpdb} and {@link FakeOtx} to say what the Sources
+ * answer. Every test starts with no Lookups, no Source Results and nothing programmed into the fake
+ * Sources except that OTX has no pulses, because all integration tests share one database and one
+ * WireMock server. Each Source gets {@link #SOURCE_TIMEOUT} to answer;
  * a test class can override these properties with its own {@code @TestPropertySource}.
  */
 @Target(ElementType.TYPE)
@@ -38,6 +39,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         properties = {
             "tid.sources.virustotal.api-key=" + FakeVirusTotal.API_KEY,
             "tid.sources.abuseipdb.api-key=" + FakeAbuseIpdb.API_KEY,
+            "tid.sources.otx.api-key=" + FakeOtx.API_KEY,
             "tid.sources.timeout=" + IntegrationTest.SOURCE_TIMEOUT
         })
 @Sql(statements = "truncate lookup_source_result, lookup, source_result")
@@ -60,7 +62,9 @@ public @interface IntegrationTest {
 
         @Override
         public void beforeEach(ExtensionContext context) {
-            SpringExtension.getApplicationContext(context).getBean(WireMockServer.class).resetAll();
+            var spring = SpringExtension.getApplicationContext(context);
+            spring.getBean(WireMockServer.class).resetAll();
+            spring.getBean(FakeOtx.class).mentionsNothing();
         }
     }
 }

@@ -68,7 +68,9 @@ class ParallelSourcesTest {
         var took = Duration.ofNanos(System.nanoTime() - started);
 
         assertThat(took).isLessThan(Duration.ofMillis(2800));
-        assertThat(lookup.get("sourcesAsked")).containsExactlyInAnyOrder(new TextNode("VirusTotal"), new TextNode("Second Source"));
+        assertThat(lookup.get("sourcesAsked"))
+                .containsExactlyInAnyOrder(
+                        new TextNode("VirusTotal"), new TextNode("AlienVault OTX"), new TextNode("Second Source"));
         assertThat(lookup.get("partial").asBoolean()).isFalse();
     }
 

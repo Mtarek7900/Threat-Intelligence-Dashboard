@@ -5,6 +5,7 @@ Real VirusTotal v3 API responses, recorded once on 2026-10-15 with a free-tier k
 | File | Request | Answer |
 | --- | --- | --- |
 | `ip-address-malicious.json` | `GET /api/v3/ip_addresses/185.220.101.1` | 200, 15 of 92 engines malicious |
+| `ip-address-clean.json` | `GET /api/v3/ip_addresses/9.9.9.9` | 200, 0 engines malicious (1 suspicious) |
 | `domain-clean.json` | `GET /api/v3/domains/example.com` | 200, 0 engines malicious |
 | `file-not-found.json` | `GET /api/v3/files/9f2c…0d2e` | 404 `NotFoundError` |
 | `domain-not-found.json` | `GET /api/v3/domains/tid-fixture-q8v3x1k9z2w7.com` | 404 `NotFoundError` |

@@ -1,25 +1,17 @@
 package io.github.mtarek7900.tid.source;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.mtarek7900.tid.indicator.Indicator;
 import io.github.mtarek7900.tid.indicator.IndicatorType;
-import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.UUID;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
 
 /** The VirusTotal v3 API. It covers every Indicator Type. */
-// Sources are asked, explained and shown in this order: VirusTotal first, then AbuseIPDB
+// Sources are asked, explained and shown in this order: VirusTotal, AbuseIPDB, then AlienVault OTX
 @Component
 @Order(1)
 class VirusTotal implements Source {
@@ -27,24 +19,12 @@ class VirusTotal implements Source {
     private static final String NAME = "VirusTotal";
     private static final String SITE = "https://www.virustotal.com/gui/";
 
-    private final RestClient http;
-    private final boolean hasApiKey;
-    private final ObjectMapper json;
-    private final Clock clock;
+    private final SourceApi api;
 
-    VirusTotal(
-            RestClient.Builder http,
-            Properties properties,
-            SourcesProperties sources,
-            ObjectMapper json,
-            Clock clock) {
-        this.http = SourceHttp.withTimeouts(http, sources.timeout())
+    VirusTotal(SourceApis apis, Properties properties) {
+        this.api = apis.of(NAME, "VIRUSTOTAL_API_KEY", properties.apiKey(), http -> http
                 .baseUrl(properties.baseUrl())
-                .defaultHeader("x-apikey", properties.apiKey())
-                .build();
-        this.hasApiKey = properties.apiKey() != null && !properties.apiKey().isBlank();
-        this.json = json;
-        this.clock = clock;
+                .defaultHeader("x-apikey", properties.apiKey()));
     }
 
     @Override
@@ -64,32 +44,22 @@ class VirusTotal implements Source {
 
     @Override
     public SourceResult fetch(Indicator indicator) {
-        if (!hasApiKey) {
-            throw new SourceException(NotCheckedReason.MISSING_API_KEY, "VIRUSTOTAL_API_KEY isn't set");
+        var answer = api.get(uri -> uri.path("/api/v3/{collection}/{id}")
+                .build(Paths.of(indicator.type()).api(), indicator.value()));
+        if (answer.ok()) {
+            return fromAnalysis(indicator, answer.body());
         }
-        return http.get()
-                .uri("/api/v3/{collection}/{id}", Paths.of(indicator.type()).api(), indicator.value())
-                .exchange((request, response) -> {
-                    var body = new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8);
-                    var status = response.getStatusCode();
-                    if (status.is2xxSuccessful()) {
-                        return fromAnalysis(indicator, body);
-                    }
-                    if (status.isSameCodeAs(HttpStatus.NOT_FOUND) && isNotFoundError(body)) {
-                        return result(indicator, Outcome.NOT_SEEN, null, body);
-                    }
-                    if (status.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
-                        throw new SourceException(NotCheckedReason.RATE_LIMITED, NAME + " answered " + status);
-                    }
-                    throw new SourceException(NotCheckedReason.SOURCE_ERROR, NAME + " answered " + status);
-                });
+        if (answer.status().isSameCodeAs(HttpStatus.NOT_FOUND) && isNotFoundError(answer.body())) {
+            return api.result(indicator, Outcome.NOT_SEEN, null, link(indicator), answer.body());
+        }
+        throw api.unusable(answer);
     }
 
     /** VirusTotal knows of an Indicator it has never analysed; that isn't Seen. */
     private SourceResult fromAnalysis(Indicator indicator, String body) {
-        var attributes = parse(body).path("data").path("attributes");
+        var attributes = api.parse(body).path("data").path("attributes");
         if (!attributes.hasNonNull("last_analysis_date")) {
-            return result(indicator, Outcome.NOT_SEEN, null, body);
+            return api.result(indicator, Outcome.NOT_SEEN, null, link(indicator), body);
         }
         var stats = attributes.path("last_analysis_stats");
         var flagged = stats.path("malicious").asInt();
@@ -99,30 +69,12 @@ class VirusTotal implements Source {
                 + stats.path("harmless").asInt()
                 + stats.path("undetected").asInt();
         var lastAnalysedAt = Instant.ofEpochSecond(attributes.get("last_analysis_date").asLong());
-        return result(indicator, Outcome.SEEN, new VirusTotalFacts(flagged, total, lastAnalysedAt), body);
+        return api.result(
+                indicator, Outcome.SEEN, new VirusTotalFacts(flagged, total, lastAnalysedAt), link(indicator), body);
     }
 
     private boolean isNotFoundError(String body) {
-        try {
-            return "NotFoundError".equals(json.readTree(body).path("error").path("code").asText());
-        } catch (JsonProcessingException e) {
-            return false;
-        }
-    }
-
-    private JsonNode parse(String body) {
-        try {
-            return json.readTree(body);
-        } catch (JsonProcessingException e) {
-            throw new SourceException(NotCheckedReason.SOURCE_ERROR, NAME + " answered with malformed JSON", e);
-        }
-    }
-
-    private SourceResult result(Indicator indicator, Outcome outcome, SourceFacts facts, String body) {
-        // PostgreSQL keeps microseconds, so truncate to return what a later read will see
-        var fetchedAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
-        return new SourceResult(
-                UUID.randomUUID(), NAME, indicator, outcome, null, facts, link(indicator), body, fetchedAt);
+        return "NotFoundError".equals(api.parse(body).path("error").path("code").asText());
     }
 
     /** Where VirusTotal keeps each Indicator Type, in its API and on its site. */

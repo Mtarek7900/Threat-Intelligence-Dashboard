@@ -44,11 +44,13 @@ class AbuseIpdbTest {
         var lookup = lookUp("185.220.101.1");
 
         assertThat(lookup.get("verdict").asText()).isEqualTo("MALICIOUS");
-        assertThat(lookup.get("sourcesAsked")).containsExactly(new TextNode("VirusTotal"), new TextNode("AbuseIPDB"));
+        assertThat(lookup.get("sourcesAsked"))
+                .containsExactly(new TextNode("VirusTotal"), new TextNode("AbuseIPDB"), new TextNode("AlienVault OTX"));
         assertThat(lookup.get("why"))
                 .containsExactly(
                         new TextNode("VirusTotal: 15 of 92 engines flagged it. 3 or more is Malicious."),
-                        new TextNode("AbuseIPDB: abuse confidence 100%. 75% or more is Malicious."));
+                        new TextNode("AbuseIPDB: abuse confidence 100%. 75% or more is Malicious."),
+                        new TextNode("AlienVault OTX has no record of it. No Signal."));
         var abuse = lookup.get("sourceResults").get(1);
         assertThat(abuse.get("source").asText()).isEqualTo("AbuseIPDB");
         assertThat(abuse.get("outcome").asText()).isEqualTo("SEEN");
@@ -125,8 +127,9 @@ class AbuseIpdbTest {
         var fileHash = lookUp(hash);
 
         for (var lookup : new JsonNode[] {domain, fileHash}) {
-            assertThat(lookup.get("sourcesAsked")).containsExactly(new TextNode("VirusTotal"));
-            assertThat(lookup.get("sourceResults")).hasSize(1);
+            assertThat(lookup.get("sourcesAsked"))
+                    .containsExactly(new TextNode("VirusTotal"), new TextNode("AlienVault OTX"));
+            assertThat(lookup.get("sourceResults")).hasSize(2);
             assertThat(lookup.get("partial").asBoolean()).isFalse();
         }
         assertThat(abuseIpdb.checksReceived()).isZero();

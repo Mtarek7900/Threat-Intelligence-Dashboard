@@ -16,6 +16,9 @@ tid:
     abuseipdb:
       base-url: ${ABUSEIPDB_BASE_URL:https://api.abuseipdb.com}
       api-key: ${ABUSEIPDB_API_KEY:}
+    otx:
+      base-url: ${OTX_BASE_URL:https://otx.alienvault.com}
+      api-key: ${OTX_API_KEY:}
   verdict:
     virustotal:
       # Engines flagging the Indicator for a Malicious Signal, and for a Suspicious one below that

@@ -8,6 +8,7 @@ import io.github.mtarek7900.tid.indicator.Indicator;
 import io.github.mtarek7900.tid.indicator.IndicatorType;
 import io.github.mtarek7900.tid.source.AbuseIpdbFacts;
 import io.github.mtarek7900.tid.source.NotCheckedReason;
+import io.github.mtarek7900.tid.source.OtxFacts;
 import io.github.mtarek7900.tid.source.Outcome;
 import io.github.mtarek7900.tid.source.SourceResult;
 import io.github.mtarek7900.tid.source.VirusTotalFacts;
@@ -19,6 +20,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class VerdictRuleTest {
 
@@ -56,6 +58,69 @@ class VerdictRuleTest {
         var decision = rule.decide(List.of(abuseIpdbSeen(confidence)));
 
         assertThat(decision.readings()).singleElement().extracting(Reading::signal).isEqualTo(signal);
+    }
+
+    @ParameterizedTest(name = "OTX in {0} pulses")
+    @ValueSource(ints = {1, 50})
+    void otxGivesASuspiciousSignalWhenAnyPulseMentionsTheIndicator(int pulses) {
+        var decision = rule.decide(List.of(otxSeen(pulses)));
+
+        assertThat(decision.readings()).singleElement().extracting(Reading::signal).isEqualTo(Signal.SUSPICIOUS);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void otxIsACorroboratingSourceSoItsSignalCountsOnlyWhenAnotherSourceAlsoGivesOne(
+            String combination, List<SourceResult> results, Verdict verdict) {
+        assertThat(rule.decide(results).verdict()).isEqualTo(verdict);
+    }
+
+    static Stream<Arguments> otxIsACorroboratingSourceSoItsSignalCountsOnlyWhenAnotherSourceAlsoGivesOne() {
+        return Stream.of(
+                arguments("OTX alone", List.of(otxSeen(50)), Verdict.CLEAN),
+                arguments("VirusTotal no Signal + OTX", List.of(virusTotalSeen(0), otxSeen(50)), Verdict.CLEAN),
+                arguments("VirusTotal Not Seen + OTX", List.of(virusTotalNotSeen(), otxSeen(50)), Verdict.CLEAN),
+                arguments("VirusTotal Not Checked + OTX", List.of(notChecked("VirusTotal", NotCheckedReason.TIMEOUT), otxSeen(50)), Verdict.CLEAN),
+                arguments("VirusTotal Suspicious + OTX", List.of(virusTotalSeen(1), otxSeen(3)), Verdict.SUSPICIOUS),
+                arguments("VirusTotal Malicious + OTX", List.of(virusTotalSeen(5), otxSeen(3)), Verdict.MALICIOUS),
+                arguments("AbuseIPDB Suspicious + OTX", List.of(abuseIpdbSeen(30), otxSeen(1)), Verdict.SUSPICIOUS),
+                arguments("VirusTotal no Signal + AbuseIPDB no Signal + OTX", List.of(virusTotalSeen(0), abuseIpdbSeen(0), otxSeen(50)), Verdict.CLEAN),
+                arguments("VirusTotal Not Seen + OTX Not Seen", List.of(virusTotalNotSeen(), otxNotSeen()), Verdict.UNKNOWN));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void whySaysWhetherOtxsSignalWasCounted(String combination, List<SourceResult> results, boolean counted, String why) {
+        var otx = rule.decide(results).readings().getLast();
+
+        assertThat(otx.signal()).isEqualTo(Signal.SUSPICIOUS);
+        assertThat(otx.counted()).isEqualTo(counted);
+        assertThat(otx.explanation()).isEqualTo(why);
+    }
+
+    static Stream<Arguments> whySaysWhetherOtxsSignalWasCounted() {
+        var notCounted = "AlienVault OTX: in 50 pulses. Suspicious, but not counted: AlienVault OTX is a Corroborating"
+                + " Source and no other Source gave a Signal.";
+        return Stream.of(
+                arguments("OTX alone", List.of(otxSeen(50)), false, notCounted),
+                arguments("VirusTotal no Signal + OTX", List.of(virusTotalSeen(0), otxSeen(50)), false, notCounted),
+                arguments("VirusTotal Suspicious + OTX", List.of(virusTotalSeen(1), otxSeen(3)), true,
+                        "AlienVault OTX: in 3 pulses. Suspicious, counted because another Source also gave a Signal."),
+                arguments("AbuseIPDB Malicious + OTX", List.of(abuseIpdbSeen(90), otxSeen(1)), true,
+                        "AlienVault OTX: in 1 pulse. Suspicious, counted because another Source also gave a Signal."));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource
+    void signalsFromSourcesThatAreNotCorroboratingAlwaysCount(String combination, List<SourceResult> results) {
+        assertThat(rule.decide(results).readings()).allMatch(Reading::counted);
+    }
+
+    static Stream<Arguments> signalsFromSourcesThatAreNotCorroboratingAlwaysCount() {
+        return Stream.of(
+                arguments("VirusTotal alone", List.of(virusTotalSeen(5))),
+                arguments("AbuseIPDB alone", List.of(abuseIpdbSeen(30))),
+                arguments("VirusTotal + AbuseIPDB", List.of(virusTotalSeen(1), abuseIpdbSeen(90))));
     }
 
     @ParameterizedTest(name = "Malicious at {0}%, Suspicious at {1}%: {2}% -> {3}")
@@ -199,6 +264,7 @@ class VerdictRuleTest {
                 arguments(abuseIpdbSeen(40), "AbuseIPDB: abuse confidence 40%. 25% to 74% is Suspicious."),
                 arguments(abuseIpdbSeen(0), "AbuseIPDB: abuse confidence 0%. No Signal."),
                 arguments(abuseIpdbNotSeen(), "AbuseIPDB has no record of it. No Signal."),
+                arguments(otxNotSeen(), "AlienVault OTX has no record of it. No Signal."),
                 arguments(notChecked("VirusTotal", NotCheckedReason.TIMEOUT), "VirusTotal was Not Checked: it didn't answer in time."),
                 arguments(notChecked("VirusTotal", NotCheckedReason.SOURCE_ERROR), "VirusTotal was Not Checked: it answered with an error."),
                 arguments(notChecked("VirusTotal", NotCheckedReason.RATE_LIMITED), "VirusTotal was Not Checked: it is limiting how often it can be asked."),
@@ -266,6 +332,32 @@ class VerdictRuleTest {
                 null,
                 null,
                 "https://www.abuseipdb.com/check/185.220.101.1",
+                "{}",
+                Instant.parse("2026-01-15T10:00:00Z"));
+    }
+
+    static SourceResult otxSeen(int pulses) {
+        return new SourceResult(
+                UUID.randomUUID(),
+                "AlienVault OTX",
+                new Indicator("evil.com", IndicatorType.DOMAIN),
+                Outcome.SEEN,
+                null,
+                new OtxFacts(pulses, List.of(new OtxFacts.Pulse("Example campaign", List.of("phishing")))),
+                "https://otx.alienvault.com/indicator/domain/evil.com",
+                "{}",
+                Instant.parse("2026-01-15T10:00:00Z"));
+    }
+
+    static SourceResult otxNotSeen() {
+        return new SourceResult(
+                UUID.randomUUID(),
+                "AlienVault OTX",
+                new Indicator("evil.com", IndicatorType.DOMAIN),
+                Outcome.NOT_SEEN,
+                null,
+                null,
+                "https://otx.alienvault.com/indicator/domain/evil.com",
                 "{}",
                 Instant.parse("2026-01-15T10:00:00Z"));
     }

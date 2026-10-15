@@ -75,8 +75,8 @@ class LookupVerdictTest {
 
         assertThat(lookup.get("verdict").asText()).isEqualTo("CLEAN");
         assertThat(lookup.get("why"))
-                .containsExactly(new TextNode("VirusTotal: 0 of 92 engines flagged it. No Signal."));
-        assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
+                .containsExactly(new TextNode("VirusTotal: 0 of 92 engines flagged it. No Signal."), new TextNode("AlienVault OTX has no record of it. No Signal."));
+        assertThat(lookup.get("sourceResults")).first().satisfies(result -> {
             assertThat(result.get("outcome").asText()).isEqualTo("SEEN");
             assertThat(result.get("signal").asText()).isEqualTo("NONE");
             assertThat(result.get("link").asText()).isEqualTo("https://www.virustotal.com/gui/domain/example.com");
@@ -91,9 +91,11 @@ class LookupVerdictTest {
         var lookup = lookUp(hash.toUpperCase()).getBody();
 
         assertThat(lookup.get("verdict").asText()).isEqualTo("UNKNOWN");
-        assertThat(lookup.get("why")).containsExactly(new TextNode("VirusTotal has no record of it. No Signal."));
-        assertThat(lookup.get("sourcesAsked")).containsExactly(new TextNode("VirusTotal"));
-        assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
+        assertThat(lookup.get("why"))
+                .containsExactly(new TextNode("VirusTotal has no record of it. No Signal."), new TextNode("AlienVault OTX has no record of it. No Signal."));
+        assertThat(lookup.get("sourcesAsked"))
+                .containsExactly(new TextNode("VirusTotal"), new TextNode("AlienVault OTX"));
+        assertThat(lookup.get("sourceResults")).first().satisfies(result -> {
             assertThat(result.get("outcome").asText()).isEqualTo("NOT_SEEN");
             assertThat(result.get("signal").asText()).isEqualTo("NONE");
             assertThat(result.get("facts").isNull()).isTrue();

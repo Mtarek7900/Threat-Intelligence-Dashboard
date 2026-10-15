@@ -55,6 +55,13 @@
         </dependency>
 
         <dependency>
+            <!-- InternetDomainName: the public suffix list tells a domain from a subdomain -->
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.8-jre</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>

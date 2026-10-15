@@ -7,7 +7,10 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 
-/** Points every Source at one WireMock server, which tests program through {@link FakeVirusTotal} and {@link FakeAbuseIpdb}. */
+/**
+ * Points every Source at one WireMock server, which tests program through {@link FakeVirusTotal},
+ * {@link FakeAbuseIpdb} and {@link FakeOtx}.
+ */
 @TestConfiguration(proxyBeanMethods = false)
 public class FakeSourcesConfiguration {
 
@@ -29,10 +32,16 @@ public class FakeSourcesConfiguration {
     }
 
     @Bean
+    FakeOtx fakeOtx(WireMockServer fakeSources) {
+        return new FakeOtx(fakeSources);
+    }
+
+    @Bean
     DynamicPropertyRegistrar fakeSourceProperties(WireMockServer fakeSources) {
         return registry -> {
             registry.add("tid.sources.virustotal.base-url", fakeSources::baseUrl);
             registry.add("tid.sources.abuseipdb.base-url", () -> fakeSources.baseUrl() + "/abuseipdb");
+            registry.add("tid.sources.otx.base-url", () -> fakeSources.baseUrl() + "/otx");
         };
     }
 }

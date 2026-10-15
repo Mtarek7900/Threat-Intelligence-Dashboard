@@ -55,8 +55,9 @@ class NotCheckedTest {
         assertThat(lookup.get("partial").asBoolean()).isTrue();
         assertThat(lookup.get("sourcesNotChecked")).containsExactly(new TextNode("VirusTotal"));
         assertThat(lookup.get("why"))
-                .containsExactly(new TextNode("VirusTotal was Not Checked: it didn't answer in time."));
-        assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
+                .containsExactly(
+                        new TextNode("VirusTotal was Not Checked: it didn't answer in time."), new TextNode("AlienVault OTX has no record of it. No Signal."));
+        assertThat(lookup.get("sourceResults")).first().satisfies(result -> {
             assertThat(result.get("outcome").asText()).isEqualTo("NOT_CHECKED");
             assertThat(result.get("notCheckedReason").asText()).isEqualTo("TIMEOUT");
             assertThat(result.get("link").asText())
@@ -119,7 +120,7 @@ class NotCheckedTest {
         assertThat(lookup.get("verdict").asText()).isEqualTo("UNKNOWN");
         assertThat(lookup.get("partial").asBoolean()).isTrue();
         assertThat(lookup.get("sourcesNotChecked")).containsExactly(new TextNode("VirusTotal"));
-        assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
+        assertThat(lookup.get("sourceResults")).first().satisfies(result -> {
             assertThat(result.get("outcome").asText()).isEqualTo("NOT_CHECKED");
             assertThat(result.get("notCheckedReason").asText()).isEqualTo(reason);
         });

@@ -1,4 +1,5 @@
-import type { IndicatorType, Lookup, NotCheckedReason, Outcome, SourceResult, Verdict } from './api/lookups'
+import { useId } from 'react'
+import type { IndicatorType, Lookup, NotCheckedReason, OtxFacts, Outcome, SourceResult, Verdict } from './api/lookups'
 
 const indicatorTypeLabels: Record<IndicatorType, string> = {
   IP_ADDRESS: 'IP address',
@@ -77,7 +78,7 @@ export function LookupResult({ lookup }: { lookup: Lookup }) {
 }
 
 function SourcePanel({ result }: { result: SourceResult }) {
-  const headingId = `source-${result.source}`
+  const headingId = useId()
   return (
     <section aria-labelledby={headingId} className="rounded-lg border border-slate-200 bg-white p-6">
       <div className="flex items-baseline justify-between gap-4">
@@ -140,7 +141,42 @@ function SourceFacts({ result }: { result: SourceResult }) {
           </ul>
         )
       )
+    case 'AlienVault OTX':
+      return result.facts && <OtxPulses facts={result.facts} />
   }
+}
+
+/** Tags shown per pulse: some pulses carry dozens. */
+const TAGS_SHOWN = 8
+
+function OtxPulses({ facts: { pulseCount, pulses } }: { facts: OtxFacts }) {
+  return (
+    <div className="mt-2 text-slate-700">
+      <p>
+        In {pulseCount.toLocaleString('en')} {pulseCount === 1 ? 'pulse' : 'pulses'}
+        {pulses.length < pulseCount && `, ${pulses.length} of them listed here`}
+      </p>
+      <ul className="mt-2 max-h-80 space-y-2 overflow-auto">
+        {pulses.map((pulse, index) => (
+          <li key={index}>
+            <p className="text-slate-900">{pulse.name}</p>
+            {pulse.tags.length > 0 && (
+              <p className="mt-1 flex flex-wrap gap-1 text-xs">
+                {pulse.tags.slice(0, TAGS_SHOWN).map((tag, tagIndex) => (
+                  <span key={tagIndex} className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-600">
+                    {tag}
+                  </span>
+                ))}
+                {pulse.tags.length > TAGS_SHOWN && (
+                  <span className="px-1.5 py-0.5 text-slate-500">+{pulse.tags.length - TAGS_SHOWN} more</span>
+                )}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 /** E.g. "Germany (DE)", or just the code if the browser doesn't know it. */

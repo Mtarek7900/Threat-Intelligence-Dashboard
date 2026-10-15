@@ -3,7 +3,9 @@ package io.github.mtarek7900.tid;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
@@ -50,7 +52,7 @@ public class FakeVirusTotal {
 
     /** How many requests reached VirusTotal at all. */
     public int requestsReceived() {
-        return server.getAllServeEvents().size();
+        return server.findAll(getRequestedFor(urlPathMatching("/api/v3/.*"))).size();
     }
 
     private void respond(String path, ResponseDefinitionBuilder response) {
