@@ -1,0 +1,6 @@
+{
+    "error": {
+        "code": "NotFoundError",
+        "message": "Domain \"evil.com\" not found"
+    }
+}

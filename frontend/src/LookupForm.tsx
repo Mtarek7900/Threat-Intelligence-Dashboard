@@ -1,18 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { makeLookup, type IndicatorType, type LookupOutcome, type Verdict } from './api/lookups'
-
-const indicatorTypeLabels: Record<IndicatorType, string> = {
-  IP_ADDRESS: 'IP address',
-  DOMAIN: 'Domain',
-  FILE_HASH: 'File hash',
-}
-
-const verdictLabels: Record<Verdict, string> = {
-  MALICIOUS: 'Malicious',
-  SUSPICIOUS: 'Suspicious',
-  CLEAN: 'Clean',
-  UNKNOWN: 'Unknown',
-}
+import { makeLookup, type LookupOutcome } from './api/lookups'
+import { LookupResult } from './LookupResult'
 
 type LookupState = { status: 'idle' } | { status: 'looking-up' } | LookupOutcome | { status: 'failed' }
 
@@ -64,18 +52,7 @@ export function LookupForm() {
           The Lookup failed. Is the server running?
         </p>
       )}
-      {state.status === 'made' && (
-        <section aria-label="Lookup" className="mt-3 rounded-lg border border-slate-200 bg-white p-6">
-          <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
-            <dt className="text-slate-500">Indicator</dt>
-            <dd className="font-mono break-all text-slate-900">{state.lookup.indicator}</dd>
-            <dt className="text-slate-500">Type</dt>
-            <dd className="text-slate-900">{indicatorTypeLabels[state.lookup.indicatorType]}</dd>
-            <dt className="text-slate-500">Verdict</dt>
-            <dd className="font-semibold text-slate-900">{verdictLabels[state.lookup.verdict]}</dd>
-          </dl>
-        </section>
-      )}
+      {state.status === 'made' && <LookupResult lookup={state.lookup} />}
     </section>
   )
 }

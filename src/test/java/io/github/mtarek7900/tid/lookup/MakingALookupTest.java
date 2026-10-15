@@ -3,12 +3,14 @@ package io.github.mtarek7900.tid.lookup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.github.mtarek7900.tid.FakeVirusTotal;
 import io.github.mtarek7900.tid.IntegrationTest;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -22,6 +24,9 @@ class MakingALookupTest {
     @LocalServerPort
     int port;
 
+    @Autowired
+    FakeVirusTotal virusTotal;
+
     RestClient api;
 
     @BeforeEach
@@ -34,11 +39,14 @@ class MakingALookupTest {
 
     @ParameterizedTest(name = "[{0}] -> {1} ({2})")
     @CsvSource(textBlock = """
-            evil[.]com,       evil.com,       DOMAIN
-            ' 8.8.8[.]8 ',    8.8.8.8,        IP_ADDRESS
-            D41D8CD98F00B204E9800998ECF8427E, d41d8cd98f00b204e9800998ecf8427e, FILE_HASH
+            evil[.]com,       evil.com,       DOMAIN,     domains/evil.com,       404, domain-not-found.json
+            ' 8.8.8[.]8 ',    8.8.8.8,        IP_ADDRESS, ip_addresses/8.8.8.8,   200, ip-address-never-analysed.json
+            D41D8CD98F00B204E9800998ECF8427E, d41d8cd98f00b204e9800998ecf8427e, FILE_HASH, files/d41d8cd98f00b204e9800998ecf8427e, 404, file-not-found.json
             """)
-    void aValidIndicatorMakesALookupWithAnUnknownVerdict(String input, String indicator, String type) {
+    void aValidIndicatorMakesALookupOfTheNormalisedIndicator(
+            String input, String indicator, String type, String virusTotalPath, int status, String recording) {
+        virusTotal.answers(virusTotalPath, status, recording);
+
         var response = lookUp(input);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -52,12 +60,16 @@ class MakingALookupTest {
 
     @Test
     void theLookupIsKeptInTheLookupHistory() {
+        virusTotal.answers("domains/evil.com", 404, "domain-not-found.json");
         var lookup = lookUp("evil[.]com").getBody();
 
         var history = api.get().uri("/api/lookups").retrieve().body(JsonNode.class);
 
-        assertThat(history).hasSize(1);
-        assertThat(history.get(0)).isEqualTo(lookup);
+        assertThat(history).singleElement().satisfies(entry -> {
+            for (var field : new String[] {"id", "indicator", "indicatorType", "verdict", "lookedUpAt"}) {
+                assertThat(entry.get(field)).as(field).isEqualTo(lookup.get(field));
+            }
+        });
     }
 
     @ParameterizedTest(name = "[{0}] -> {1}")

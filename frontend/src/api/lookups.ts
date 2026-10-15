@@ -18,11 +18,35 @@ export type IndicatorType = 'IP_ADDRESS' | 'DOMAIN' | 'FILE_HASH'
 
 export type Verdict = 'MALICIOUS' | 'SUSPICIOUS' | 'CLEAN' | 'UNKNOWN'
 
+export type Outcome = 'SEEN' | 'NOT_SEEN'
+
+export type Signal = 'MALICIOUS' | 'SUSPICIOUS' | 'NONE'
+
+export type VirusTotalFacts = {
+  enginesFlagged: number
+  enginesTotal: number
+  lastAnalysedAt: string
+}
+
+/** A Source Result the Lookup used. `facts` is null when the Source has Not Seen the Indicator. */
+export type SourceResult = {
+  source: 'VirusTotal'
+  outcome: Outcome
+  signal: Signal
+  facts: VirusTotalFacts | null
+  link: string
+  fetchedAt: string
+  rawResponse: string
+}
+
 export type Lookup = {
   id: string
   indicator: string
   indicatorType: IndicatorType
   verdict: Verdict
+  why: string[]
+  sourcesAsked: string[]
+  sourceResults: SourceResult[]
   lookedUpAt: string
 }
 

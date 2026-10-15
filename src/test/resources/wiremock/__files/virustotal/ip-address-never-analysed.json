@@ -1,0 +1,31 @@
+{
+    "data": {
+        "id": "203.0.114.7",
+        "type": "ip_address",
+        "links": {
+            "self": "https://www.virustotal.com/api/v3/ip_addresses/203.0.114.7"
+        },
+        "attributes": {
+            "network": "203.0.112.0/21",
+            "tags": [],
+            "country": "AU",
+            "as_owner": "APNIC Research and Development",
+            "asn": 4608,
+            "continent": "OC",
+            "regional_internet_registry": "APNIC",
+            "last_analysis_stats": {
+                "malicious": 0,
+                "suspicious": 0,
+                "undetected": 0,
+                "harmless": 0,
+                "timeout": 0
+            },
+            "last_analysis_results": {},
+            "reputation": 0,
+            "total_votes": {
+                "harmless": 0,
+                "malicious": 0
+            }
+        }
+    }
+}
