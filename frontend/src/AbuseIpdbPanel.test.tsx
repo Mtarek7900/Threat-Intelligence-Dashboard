@@ -21,7 +21,7 @@ const abuseIpdb = {
   outcome: 'SEEN',
   notCheckedReason: null,
   signal: 'MALICIOUS',
-  facts: { abuseConfidence: 100, totalReports: 1874, countryCode: 'DE', isp: 'Stiftung Erneuerbare Freiheit' },
+  facts: { abuseConfidence: 100, totalReports: 425, countryCode: 'DE', isp: 'Artikel10 e.V.' },
   link: 'https://www.abuseipdb.com/check/185.220.101.1',
   fetchedAt: '2026-01-15T10:00:00Z',
   rawResponse: '{"data":{"abuseConfidenceScore":100}}',
@@ -64,9 +64,9 @@ test('the AbuseIPDB panel shows the abuse confidence, reports, country and ISP',
   const panel = within(result).getByRole('region', { name: 'AbuseIPDB' })
   expect(panel).toHaveTextContent('Seen')
   expect(panel).toHaveTextContent('Abuse confidence 100%')
-  expect(panel).toHaveTextContent('1,874 reports')
+  expect(panel).toHaveTextContent('425 reports')
   expect(panel).toHaveTextContent('Country Germany (DE)')
-  expect(panel).toHaveTextContent('ISP Stiftung Erneuerbare Freiheit')
+  expect(panel).toHaveTextContent('ISP Artikel10 e.V.')
   expect(within(panel).getByRole('link', { name: /open in abuseipdb/i })).toHaveAttribute(
     'href',
     'https://www.abuseipdb.com/check/185.220.101.1',

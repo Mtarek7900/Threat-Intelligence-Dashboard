@@ -1,18 +1,1 @@
-{
-    "data": {
-        "ipAddress": "45.155.205.233",
-        "isPublic": true,
-        "ipVersion": 4,
-        "isWhitelisted": false,
-        "abuseConfidenceScore": 40,
-        "countryCode": "NL",
-        "usageType": "Data Center/Web Hosting/Transit",
-        "isp": "Example Hosting B.V.",
-        "domain": "example-hosting.nl",
-        "hostnames": [],
-        "isTor": false,
-        "totalReports": 9,
-        "numDistinctUsers": 5,
-        "lastReportedAt": "2026-10-11T07:15:40+00:00"
-    }
-}
+{"data":{"ipAddress":"118.193.40.10","isPublic":true,"ipVersion":4,"isWhitelisted":false,"abuseConfidenceScore":66,"countryCode":"HK","usageType":"Data Center\/Web Hosting\/Transit","isp":"UCLOUD INFORMATION TECHNOLOGY (HK) LIMITED","domain":"ucloud.cn","hostnames":[],"isTor":false,"totalReports":19,"numDistinctUsers":18,"lastReportedAt":"2026-10-14T13:55:33+00:00"}}

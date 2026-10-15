@@ -54,9 +54,9 @@ class AbuseIpdbTest {
         assertThat(abuse.get("outcome").asText()).isEqualTo("SEEN");
         assertThat(abuse.get("signal").asText()).isEqualTo("MALICIOUS");
         assertThat(abuse.get("facts").get("abuseConfidence").asInt()).isEqualTo(100);
-        assertThat(abuse.get("facts").get("totalReports").asInt()).isEqualTo(1874);
+        assertThat(abuse.get("facts").get("totalReports").asInt()).isEqualTo(425);
         assertThat(abuse.get("facts").get("countryCode").asText()).isEqualTo("DE");
-        assertThat(abuse.get("facts").get("isp").asText()).isEqualTo("Stiftung Erneuerbare Freiheit");
+        assertThat(abuse.get("facts").get("isp").asText()).isEqualTo("Artikel10 e.V.");
         assertThat(abuse.get("link").asText()).isEqualTo("https://www.abuseipdb.com/check/185.220.101.1");
     }
 
@@ -75,14 +75,14 @@ class AbuseIpdbTest {
 
     @Test
     void anIpAddressAbuseIpdbHasModerateConfidenceInIsSuspicious() {
-        virusTotal.answers("ip_addresses/45.155.205.233", 200, "ip-address-never-analysed.json");
-        abuseIpdb.answers("45.155.205.233", 200, "suspicious-confidence.json");
+        virusTotal.answers("ip_addresses/118.193.40.10", 200, "ip-address-never-analysed.json");
+        abuseIpdb.answers("118.193.40.10", 200, "suspicious-confidence.json");
 
-        var lookup = lookUp("45.155.205.233");
+        var lookup = lookUp("118.193.40.10");
 
         assertThat(lookup.get("verdict").asText()).isEqualTo("SUSPICIOUS");
         assertThat(lookup.get("why").get(1).asText())
-                .isEqualTo("AbuseIPDB: abuse confidence 40%. 25% to 74% is Suspicious.");
+                .isEqualTo("AbuseIPDB: abuse confidence 66%. 25% to 74% is Suspicious.");
     }
 
     @ParameterizedTest(name = "{0} {1}")
