@@ -46,15 +46,15 @@ class LookupVerdictTest {
         var lookup = response.getBody();
         assertThat(lookup.get("verdict").asText()).isEqualTo("MALICIOUS");
         assertThat(lookup.get("why"))
-                .containsExactly(new TextNode("VirusTotal: 14 of 94 engines flagged it. 3 or more is Malicious."));
+                .containsExactly(new TextNode("VirusTotal: 15 of 92 engines flagged it. 3 or more is Malicious."));
         assertThat(lookup.get("sourcesAsked")).containsExactly(new TextNode("VirusTotal"));
         assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
             assertThat(result.get("source").asText()).isEqualTo("VirusTotal");
             assertThat(result.get("outcome").asText()).isEqualTo("SEEN");
             assertThat(result.get("signal").asText()).isEqualTo("MALICIOUS");
-            assertThat(result.get("facts").get("enginesFlagged").asInt()).isEqualTo(14);
-            assertThat(result.get("facts").get("enginesTotal").asInt()).isEqualTo(94);
-            assertThat(result.get("facts").get("lastAnalysedAt").asText()).isEqualTo("2026-01-14T08:30:00Z");
+            assertThat(result.get("facts").get("enginesFlagged").asInt()).isEqualTo(15);
+            assertThat(result.get("facts").get("enginesTotal").asInt()).isEqualTo(92);
+            assertThat(result.get("facts").get("lastAnalysedAt").asText()).isEqualTo("2026-10-15T18:44:02Z");
             assertThat(result.get("link").asText())
                     .isEqualTo("https://www.virustotal.com/gui/ip-address/185.220.101.1");
             assertThat(result.get("fetchedAt").asText()).isEqualTo("2026-01-15T10:00:00Z");
@@ -71,7 +71,7 @@ class LookupVerdictTest {
 
         assertThat(lookup.get("verdict").asText()).isEqualTo("CLEAN");
         assertThat(lookup.get("why"))
-                .containsExactly(new TextNode("VirusTotal: 0 of 94 engines flagged it. No Signal."));
+                .containsExactly(new TextNode("VirusTotal: 0 of 92 engines flagged it. No Signal."));
         assertThat(lookup.get("sourceResults")).singleElement().satisfies(result -> {
             assertThat(result.get("outcome").asText()).isEqualTo("SEEN");
             assertThat(result.get("signal").asText()).isEqualTo("NONE");
