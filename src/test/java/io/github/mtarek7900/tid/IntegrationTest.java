@@ -42,7 +42,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             "tid.sources.otx.api-key=" + FakeOtx.API_KEY,
             "tid.sources.timeout=" + IntegrationTest.SOURCE_TIMEOUT
         })
-@Sql(statements = "truncate lookup_source_result, lookup, source_result")
+@Sql(statements = "truncate lookup_source_result, lookup, source_result, source_daily_calls")
 @ExtendWith(IntegrationTest.ResetSharedState.class)
 public @interface IntegrationTest {
 

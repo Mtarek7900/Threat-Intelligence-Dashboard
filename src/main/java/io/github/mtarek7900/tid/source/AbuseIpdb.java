@@ -21,7 +21,7 @@ class AbuseIpdb implements Source {
     private final SourceApi api;
 
     AbuseIpdb(SourceApis apis, Properties properties) {
-        this.api = apis.of(NAME, "ABUSEIPDB_API_KEY", properties.apiKey(), http -> http
+        this.api = apis.of(NAME, "ABUSEIPDB_API_KEY", properties.apiKey(), properties.dailyQuota(), http -> http
                 .baseUrl(properties.baseUrl())
                 .defaultHeader("Key", properties.apiKey())
                 .defaultHeader("Accept", "application/json"));
@@ -74,5 +74,5 @@ class AbuseIpdb implements Source {
 
     /** {@code tid.sources.abuseipdb} in application.yml. */
     @ConfigurationProperties("tid.sources.abuseipdb")
-    record Properties(String baseUrl, String apiKey) {}
+    record Properties(String baseUrl, String apiKey, int dailyQuota) {}
 }

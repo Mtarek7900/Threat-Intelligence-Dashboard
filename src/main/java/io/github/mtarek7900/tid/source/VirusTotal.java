@@ -22,7 +22,7 @@ class VirusTotal implements Source {
     private final SourceApi api;
 
     VirusTotal(SourceApis apis, Properties properties) {
-        this.api = apis.of(NAME, "VIRUSTOTAL_API_KEY", properties.apiKey(), http -> http
+        this.api = apis.of(NAME, "VIRUSTOTAL_API_KEY", properties.apiKey(), properties.dailyQuota(), http -> http
                 .baseUrl(properties.baseUrl())
                 .defaultHeader("x-apikey", properties.apiKey()));
     }
@@ -91,5 +91,5 @@ class VirusTotal implements Source {
 
     /** {@code tid.sources.virustotal} in application.yml. */
     @ConfigurationProperties("tid.sources.virustotal")
-    record Properties(String baseUrl, String apiKey) {}
+    record Properties(String baseUrl, String apiKey, int dailyQuota) {}
 }

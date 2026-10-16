@@ -4,13 +4,13 @@
 
 **Blocked by:** 06 (Parallel Source calls, Not Checked and Partial Verdict)
 
-**Status:** ready-for-agent
+**Status:** done
 
 > Note from ticket 06: a call that times out is not cancelled at the Source, so it still uses that Source's quota. Count each call when it is sent, not when it succeeds.
 
-- [ ] Each real call to a Source is counted per UTC day; reused Source Results don't count
-- [ ] Per-Source daily quota and stop percentage (default 90%) are configurable, defaulting to VirusTotal 500, AbuseIPDB 1,000 and OTX generous
-- [ ] At or above the stop, the Source isn't called and its Source Result is Not Checked with reason "daily limit reached"
-- [ ] Counts reset at midnight UTC
-- [ ] Integration tests use a low configured quota and the controllable clock to prove the stop, that reused results still work, and the reset at midnight UTC
-- [ ] The Not Checked panel shows the "daily limit reached" reason; frontend test covers it
+- [x] Each real call to a Source is counted per UTC day; reused Source Results don't count
+- [x] Per-Source daily quota and stop percentage (default 90%) are configurable, defaulting to VirusTotal 500, AbuseIPDB 1,000 and OTX generous
+- [x] At or above the stop, the Source isn't called and its Source Result is Not Checked with reason "daily limit reached"
+- [x] Counts reset at midnight UTC
+- [x] Integration tests use a low configured quota and the controllable clock to prove the stop, that reused results still work, and the reset at midnight UTC
+- [x] The Not Checked panel shows the "daily limit reached" reason; frontend test covers it

@@ -127,6 +127,7 @@ public final class VerdictRule {
             case SOURCE_ERROR -> "it answered with an error";
             case RATE_LIMITED -> "it is limiting how often it can be asked";
             case MISSING_API_KEY -> "no API key is configured";
+            case DAILY_LIMIT_REACHED -> "it has reached its daily limit";
         };
     }
 

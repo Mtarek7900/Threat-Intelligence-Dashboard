@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -16,8 +17,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriBuilder;
 
 /**
- * One Source's API, as its adapter asks it. It isn't asked without an API key, and an answer the
- * adapter can't use becomes a Not Checked Source Result. Made by {@link SourceApis}.
+ * One Source's API, as its adapter asks it. It isn't asked without an API key or once it has been
+ * asked its daily limit, and an answer the adapter can't use becomes a Not Checked Source Result. Made by {@link SourceApis}.
  */
 final class SourceApi {
 
@@ -34,20 +35,34 @@ final class SourceApi {
     private final boolean hasApiKey;
     private final RestClient http;
     private final ObjectMapper json;
+    private final BooleanSupplier countCall;
     private final Clock clock;
 
-    SourceApi(String source, String apiKeyVariable, String apiKey, RestClient http, ObjectMapper json, Clock clock) {
+    /** @param countCall counts a call about to be sent, or says the daily limit is reached */
+    SourceApi(
+            String source,
+            String apiKeyVariable,
+            String apiKey,
+            RestClient http,
+            ObjectMapper json,
+            BooleanSupplier countCall,
+            Clock clock) {
         this.source = source;
         this.apiKeyVariable = apiKeyVariable;
         this.hasApiKey = apiKey != null && !apiKey.isBlank();
         this.http = http;
         this.json = json;
+        this.countCall = countCall;
         this.clock = clock;
     }
 
     Answer get(Function<UriBuilder, URI> uri) {
         if (!hasApiKey) {
             throw new SourceException(NotCheckedReason.MISSING_API_KEY, apiKeyVariable + " isn't set");
+        }
+        // Counted when sent, not when answered: the Source counts a call it answers too late or with an error
+        if (!countCall.getAsBoolean()) {
+            throw new SourceException(NotCheckedReason.DAILY_LIMIT_REACHED, source + " has been asked its daily limit");
         }
         return http.get()
                 .uri(uri)

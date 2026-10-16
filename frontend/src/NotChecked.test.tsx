@@ -94,6 +94,7 @@ test.each([
   ['SOURCE_ERROR', 'Not Checked: Source error'],
   ['RATE_LIMITED', 'Not Checked: rate limited'],
   ['MISSING_API_KEY', 'Not Checked: missing API key'],
+  ['DAILY_LIMIT_REACHED', 'Not Checked: daily limit reached'],
 ])('a Not Checked panel says why (%s)', async (reason, shown) => {
   server.use(http.post('/api/lookups', () => HttpResponse.json(notCheckedLookup(reason), { status: 201 })))
 

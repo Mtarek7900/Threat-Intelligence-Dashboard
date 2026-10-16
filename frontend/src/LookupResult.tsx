@@ -13,6 +13,7 @@ const notCheckedReasonLabels: Record<NotCheckedReason, string> = {
   SOURCE_ERROR: 'Source error',
   RATE_LIMITED: 'rate limited',
   MISSING_API_KEY: 'missing API key',
+  DAILY_LIMIT_REACHED: 'daily limit reached',
 }
 
 /**

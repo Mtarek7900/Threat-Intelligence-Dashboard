@@ -23,7 +23,7 @@ class Otx implements Source {
     private final SourceApi api;
 
     Otx(SourceApis apis, Properties properties) {
-        this.api = apis.of(NAME, "OTX_API_KEY", properties.apiKey(), http -> http
+        this.api = apis.of(NAME, "OTX_API_KEY", properties.apiKey(), properties.dailyQuota(), http -> http
                 .baseUrl(properties.baseUrl())
                 .defaultHeader("X-OTX-API-KEY", properties.apiKey()));
     }
@@ -100,5 +100,5 @@ class Otx implements Source {
 
     /** {@code tid.sources.otx} in application.yml. */
     @ConfigurationProperties("tid.sources.otx")
-    record Properties(String baseUrl, String apiKey) {}
+    record Properties(String baseUrl, String apiKey, int dailyQuota) {}
 }

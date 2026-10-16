@@ -5,5 +5,6 @@ public enum NotCheckedReason {
     TIMEOUT,
     SOURCE_ERROR,
     RATE_LIMITED,
-    MISSING_API_KEY
+    MISSING_API_KEY,
+    DAILY_LIMIT_REACHED
 }

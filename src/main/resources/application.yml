@@ -12,15 +12,21 @@ tid:
     timeout: ${SOURCE_TIMEOUT:10s}
     # A Source Result younger than this is reused instead of asking its Source again
     reuse-window: ${SOURCE_REUSE_WINDOW:24h}
+    # Each Source stops being asked once this share (%) of its daily quota is used; counts reset at midnight UTC
+    daily-stop-percent: ${SOURCE_DAILY_STOP_PERCENT:90}
     virustotal:
       base-url: ${VIRUSTOTAL_BASE_URL:https://www.virustotal.com}
       api-key: ${VIRUSTOTAL_API_KEY:}
+      daily-quota: ${VIRUSTOTAL_DAILY_QUOTA:500}
     abuseipdb:
       base-url: ${ABUSEIPDB_BASE_URL:https://api.abuseipdb.com}
       api-key: ${ABUSEIPDB_API_KEY:}
+      daily-quota: ${ABUSEIPDB_DAILY_QUOTA:1000}
     otx:
       base-url: ${OTX_BASE_URL:https://otx.alienvault.com}
       api-key: ${OTX_API_KEY:}
+      # OTX publishes no daily quota, so this is a generous one
+      daily-quota: ${OTX_DAILY_QUOTA:10000}
   verdict:
     virustotal:
       # Engines flagging the Indicator for a Malicious Signal, and for a Suspicious one below that

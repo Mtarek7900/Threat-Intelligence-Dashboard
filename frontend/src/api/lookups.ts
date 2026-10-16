@@ -30,7 +30,12 @@ export type Verdict = 'MALICIOUS' | 'SUSPICIOUS' | 'CLEAN' | 'UNKNOWN'
 
 export type Outcome = 'SEEN' | 'NOT_SEEN' | 'NOT_CHECKED'
 
-export type NotCheckedReason = 'TIMEOUT' | 'SOURCE_ERROR' | 'RATE_LIMITED' | 'MISSING_API_KEY'
+export type NotCheckedReason =
+  | 'TIMEOUT'
+  | 'SOURCE_ERROR'
+  | 'RATE_LIMITED'
+  | 'MISSING_API_KEY'
+  | 'DAILY_LIMIT_REACHED'
 
 export type Signal = 'MALICIOUS' | 'SUSPICIOUS' | 'NONE'
 
