@@ -105,6 +105,6 @@ cd e2e && npm ci && npx playwright install chromium && npm test   # smoke test; 
 
 The smoke test builds the app's Docker image and starts it with its own PostgreSQL and with WireMock standing in for every Source ([`e2e/compose.yaml`](e2e/compose.yaml)). Then it makes a Lookup in a real browser. The fake Sources serve real responses recorded from each API (`src/test/resources/wiremock/__files`), the same ones the backend tests use. `npm run demo` in `e2e/` runs a scripted tour against that stack and re-records the GIF and screenshots above.
 
-## Licence
+## License
 
 [MIT](LICENSE)
