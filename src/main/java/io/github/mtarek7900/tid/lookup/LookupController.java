@@ -36,7 +36,7 @@ class LookupController {
     ResponseEntity<?> lookUp(@RequestBody LookupRequest request) {
         return switch (IndicatorParser.parse(Objects.requireNonNullElse(request.input(), ""))) {
             case Accepted accepted -> ResponseEntity.status(HttpStatus.CREATED)
-                    .body(lookups.lookUp(LocalAnalyst.ID, accepted.indicator()));
+                    .body(lookups.lookUp(LocalAnalyst.ID, accepted.indicator(), request.refresh()));
             case Rejected rejected -> {
                 var problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, rejected.message());
                 problem.setProperty("reason", rejected.reason());
@@ -45,5 +45,6 @@ class LookupController {
         };
     }
 
-    record LookupRequest(String input) {}
+    /** @param refresh whether to ask every Source again instead of reusing recent Source Results */
+    record LookupRequest(String input, boolean refresh) {}
 }

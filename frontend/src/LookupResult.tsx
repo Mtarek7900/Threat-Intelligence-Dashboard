@@ -34,16 +34,27 @@ const notCheckedReasonLabels: Record<NotCheckedReason, string> = {
   MISSING_API_KEY: 'missing API key',
 }
 
-export function LookupResult({ lookup }: { lookup: Lookup }) {
+/** @param onRefresh asks every Source about the Indicator again, however recent its Source Result */
+export function LookupResult({ lookup, onRefresh }: { lookup: Lookup; onRefresh: () => void }) {
   return (
     <section aria-label="Lookup" className="mt-3 space-y-4">
       <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
-          <dt className="text-slate-500">Indicator</dt>
-          <dd className="font-mono break-all text-slate-900">{lookup.indicator}</dd>
-          <dt className="text-slate-500">Type</dt>
-          <dd className="text-slate-900">{indicatorTypeLabels[lookup.indicatorType]}</dd>
-        </dl>
+        <div className="flex items-start justify-between gap-4">
+          <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
+            <dt className="text-slate-500">Indicator</dt>
+            <dd className="font-mono break-all text-slate-900">{lookup.indicator}</dd>
+            <dt className="text-slate-500">Type</dt>
+            <dd className="text-slate-900">{indicatorTypeLabels[lookup.indicatorType]}</dd>
+          </dl>
+          <button
+            type="button"
+            onClick={onRefresh}
+            title="Ask every Source again, however recent its Source Result"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+          >
+            Refresh
+          </button>
+        </div>
 
         <div className={`mt-4 rounded-lg border px-4 py-3 ${verdictStyles[lookup.verdict]}`}>
           <p className="text-sm">Verdict</p>
@@ -90,6 +101,18 @@ function SourcePanel({ result }: { result: SourceResult }) {
           {result.notCheckedReason && `: ${notCheckedReasonLabels[result.notCheckedReason]}`}
         </span>
       </div>
+
+      <p className="mt-1 text-sm text-slate-500">
+        Fetched {formatUtc(result.fetchedAt)}
+        {result.reused && (
+          <span
+            title="An earlier Lookup fetched this Source Result, so the Source wasn't asked again"
+            className="ml-2 rounded-full bg-sky-50 px-2 py-0.5 text-sky-800"
+          >
+            Reused
+          </span>
+        )}
+      </p>
 
       <SourceFacts result={result} />
 

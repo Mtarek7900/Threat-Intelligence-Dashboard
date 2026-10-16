@@ -10,6 +10,8 @@ tid:
   sources:
     # How long each Source gets to answer before its Source Result is Not Checked
     timeout: ${SOURCE_TIMEOUT:10s}
+    # A Source Result younger than this is reused instead of asking its Source again
+    reuse-window: ${SOURCE_REUSE_WINDOW:24h}
     virustotal:
       base-url: ${VIRUSTOTAL_BASE_URL:https://www.virustotal.com}
       api-key: ${VIRUSTOTAL_API_KEY:}

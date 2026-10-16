@@ -28,7 +28,11 @@ public record Lookup(
         List<UsedSourceResult> sourceResults,
         Instant lookedUpAt) {
 
-    /** A Source Result this Lookup used, with the Signal the Verdict rule read from it. */
+    /**
+     * A Source Result this Lookup used, with the Signal the Verdict rule read from it.
+     *
+     * @param reused whether an earlier Lookup fetched it, so this Lookup didn't ask the Source
+     */
     public record UsedSourceResult(
             String source,
             Outcome outcome,
@@ -37,5 +41,6 @@ public record Lookup(
             SourceFacts facts,
             String link,
             Instant fetchedAt,
+            boolean reused,
             String rawResponse) {}
 }

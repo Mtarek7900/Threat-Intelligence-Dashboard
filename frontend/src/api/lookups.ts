@@ -45,7 +45,8 @@ export type OtxFacts = {
 
 /**
  * A Source Result the Lookup used. `facts` is null unless the Source has Seen the Indicator;
- * `notCheckedReason` is null and `rawResponse` present unless it was Not Checked.
+ * `notCheckedReason` is null and `rawResponse` present unless it was Not Checked. `reused` is true
+ * when an earlier Lookup fetched it, so the Source wasn't asked again.
  */
 export type SourceResult = {
   outcome: Outcome
@@ -53,6 +54,7 @@ export type SourceResult = {
   signal: Signal
   link: string
   fetchedAt: string
+  reused: boolean
   rawResponse: string | null
 } & (
   | { source: 'VirusTotal'; facts: VirusTotalFacts | null }
@@ -75,12 +77,15 @@ export type Lookup = {
 
 export type LookupOutcome = { status: 'made'; lookup: Lookup } | { status: 'rejected'; message: string }
 
-/** Rejected input isn't an error: the server's message tells the Analyst what to fix. */
-export async function makeLookup(input: string): Promise<LookupOutcome> {
+/**
+ * Rejected input isn't an error: the server's message tells the Analyst what to fix. With `refresh`,
+ * every Source is asked again instead of reusing recent Source Results.
+ */
+export async function makeLookup(input: string, { refresh = false } = {}): Promise<LookupOutcome> {
   const response = await fetch('/api/lookups', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ input }),
+    body: JSON.stringify(refresh ? { input, refresh } : { input }),
   })
   if (response.status === 400) {
     const problem: { detail: string } = await response.json()

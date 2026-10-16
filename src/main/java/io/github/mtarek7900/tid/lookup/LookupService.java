@@ -21,6 +21,8 @@ import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -28,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -41,6 +44,7 @@ class LookupService {
 
     private final List<Source> sources;
     private final Duration sourceTimeout;
+    private final Duration reuseWindow;
     private final SourceResults sourceResults;
     private final VerdictRule verdictRule;
     private final JdbcClient jdbc;
@@ -59,6 +63,7 @@ class LookupService {
             Clock clock) {
         this.sources = sources;
         this.sourceTimeout = sourcesProperties.timeout();
+        this.reuseWindow = sourcesProperties.reuseWindow();
         this.sourceResults = sourceResults;
         this.verdictRule = new VerdictRule(thresholds);
         this.jdbc = jdbc;
@@ -67,15 +72,29 @@ class LookupService {
     }
 
     /**
-     * Asks every Source that covers the Indicator Type at the same time, then keeps the Lookup and
-     * the Source Results it used. A Source that can't answer in time gives a Not Checked Source Result.
+     * Reuses each Source's newest Source Result younger than the reuse window, unless refreshing,
+     * and asks every other Source that covers the Indicator Type at the same time. Then keeps the
+     * Lookup and the Source Results it used. A Source that can't answer in time gives a Not Checked
+     * Source Result.
+     *
+     * @param refresh whether to ask every Source again, however recent its newest Source Result
      */
-    Lookup lookUp(UUID analystId, Indicator indicator) {
+    Lookup lookUp(UUID analystId, Indicator indicator, boolean refresh) {
         var asked = sources.stream()
                 .filter(source -> source.indicatorTypes().contains(indicator.type()))
                 .toList();
-        var calls = asked.stream().map(source -> ask(source, indicator)).toList();
+        var reusableBySource = refresh
+                ? Map.<String, SourceResult>of()
+                : sourceResults.newestReusable(indicator, clock.instant().minus(reuseWindow));
+        var calls = asked.stream()
+                .map(source -> reusableBySource.containsKey(source.name())
+                        ? CompletableFuture.completedFuture(reusableBySource.get(source.name()))
+                        : ask(source, indicator))
+                .toList();
         var results = calls.stream().map(CompletableFuture::join).toList();
+        var reusedIds = reusableBySource.values().stream()
+                .map(SourceResult::id)
+                .collect(Collectors.toUnmodifiableSet());
         var decision = verdictRule.decide(results);
         // PostgreSQL keeps microseconds, so truncate to return what a later read will see
         var lookedUpAt = clock.instant().truncatedTo(ChronoUnit.MICROS);
@@ -88,9 +107,11 @@ class LookupService {
                 decision.notChecked(),
                 decision.readings().stream().map(Reading::explanation).toList(),
                 asked.stream().map(Source::name).toList(),
-                decision.readings().stream().map(LookupService::used).toList(),
+                decision.readings().stream()
+                        .map(reading -> used(reading, reusedIds.contains(reading.result().id())))
+                        .toList(),
                 lookedUpAt);
-        transactions.executeWithoutResult(status -> keep(analystId, lookup, decision));
+        transactions.executeWithoutResult(status -> keep(analystId, lookup, decision, reusedIds));
         return lookup;
     }
 
@@ -147,7 +168,8 @@ class LookupService {
                 clock.instant().truncatedTo(ChronoUnit.MICROS));
     }
 
-    private void keep(UUID analystId, Lookup lookup, Decision decision) {
+    /** @param reusedIds the Source Results this Lookup reused, which are already kept */
+    private void keep(UUID analystId, Lookup lookup, Decision decision, Set<UUID> reusedIds) {
         jdbc.sql("""
                         insert into lookup (id, analyst_id, indicator, indicator_type, verdict, partial, looked_up_at)
                         values (:id, :analystId, :indicator, :indicatorType, :verdict, :partial, :lookedUpAt)
@@ -161,20 +183,24 @@ class LookupService {
                 .param("lookedUpAt", lookup.lookedUpAt().atOffset(ZoneOffset.UTC))
                 .update();
         for (var reading : decision.readings()) {
-            sourceResults.add(reading.result());
+            var wasReused = reusedIds.contains(reading.result().id());
+            if (!wasReused) {
+                sourceResults.add(reading.result());
+            }
             jdbc.sql("""
-                            insert into lookup_source_result (lookup_id, source_result_id, signal, explanation)
-                            values (:lookupId, :sourceResultId, :signal, :explanation)
+                            insert into lookup_source_result (lookup_id, source_result_id, signal, explanation, reused)
+                            values (:lookupId, :sourceResultId, :signal, :explanation, :reused)
                             """)
                     .param("lookupId", lookup.id())
                     .param("sourceResultId", reading.result().id())
                     .param("signal", reading.signal().name())
                     .param("explanation", reading.explanation())
+                    .param("reused", wasReused)
                     .update();
         }
     }
 
-    private static UsedSourceResult used(Reading reading) {
+    private static UsedSourceResult used(Reading reading, boolean reused) {
         var result = reading.result();
         return new UsedSourceResult(
                 result.source(),
@@ -184,6 +210,7 @@ class LookupService {
                 result.facts(),
                 result.link(),
                 result.fetchedAt(),
+                reused,
                 result.rawResponse());
     }
 }

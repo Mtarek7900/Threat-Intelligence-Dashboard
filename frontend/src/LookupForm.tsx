@@ -8,14 +8,18 @@ export function LookupForm() {
   const [input, setInput] = useState('')
   const [state, setState] = useState<LookupState>({ status: 'idle' })
 
-  async function submit(event: FormEvent) {
-    event.preventDefault()
+  async function lookUp(indicator: string, options?: { refresh: boolean }) {
     setState({ status: 'looking-up' })
     try {
-      setState(await makeLookup(input))
+      setState(await makeLookup(indicator, options))
     } catch {
       setState({ status: 'failed' })
     }
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    lookUp(input)
   }
 
   return (
@@ -57,7 +61,9 @@ export function LookupForm() {
           The Lookup failed. Is the server running?
         </p>
       )}
-      {state.status === 'made' && <LookupResult lookup={state.lookup} />}
+      {state.status === 'made' && (
+        <LookupResult lookup={state.lookup} onRefresh={() => lookUp(state.lookup.indicator, { refresh: true })} />
+      )}
     </section>
   )
 }
