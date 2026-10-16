@@ -9,7 +9,6 @@ import io.github.mtarek7900.tid.source.SourceException;
 import io.github.mtarek7900.tid.source.SourceResult;
 import io.github.mtarek7900.tid.source.SourceResults;
 import io.github.mtarek7900.tid.source.SourcesProperties;
-import io.github.mtarek7900.tid.verdict.Decision;
 import io.github.mtarek7900.tid.verdict.Reading;
 import io.github.mtarek7900.tid.verdict.VerdictRule;
 import io.github.mtarek7900.tid.verdict.VerdictThresholds;
@@ -22,7 +21,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -87,9 +86,9 @@ class LookupService {
                 ? Map.<String, SourceResult>of()
                 : sourceResults.newestReusable(indicator, clock.instant().minus(reuseWindow));
         var calls = asked.stream()
-                .map(source -> reusableBySource.containsKey(source.name())
-                        ? CompletableFuture.completedFuture(reusableBySource.get(source.name()))
-                        : ask(source, indicator))
+                .map(source -> Optional.ofNullable(reusableBySource.get(source.name()))
+                        .map(CompletableFuture::completedFuture)
+                        .orElseGet(() -> ask(source, indicator)))
                 .toList();
         var results = calls.stream().map(CompletableFuture::join).toList();
         var reusedIds = reusableBySource.values().stream()
@@ -111,7 +110,7 @@ class LookupService {
                         .map(reading -> used(reading, reusedIds.contains(reading.result().id())))
                         .toList(),
                 lookedUpAt);
-        transactions.executeWithoutResult(status -> keep(analystId, lookup, decision, reusedIds));
+        transactions.executeWithoutResult(status -> keep(analystId, lookup, decision.readings()));
         return lookup;
     }
 
@@ -168,8 +167,8 @@ class LookupService {
                 clock.instant().truncatedTo(ChronoUnit.MICROS));
     }
 
-    /** @param reusedIds the Source Results this Lookup reused, which are already kept */
-    private void keep(UUID analystId, Lookup lookup, Decision decision, Set<UUID> reusedIds) {
+    /** @param readings the Lookup's readings, in the same order as its Source Results */
+    private void keep(UUID analystId, Lookup lookup, List<Reading> readings) {
         jdbc.sql("""
                         insert into lookup (id, analyst_id, indicator, indicator_type, verdict, partial, looked_up_at)
                         values (:id, :analystId, :indicator, :indicatorType, :verdict, :partial, :lookedUpAt)
@@ -182,9 +181,11 @@ class LookupService {
                 .param("partial", lookup.partial())
                 .param("lookedUpAt", lookup.lookedUpAt().atOffset(ZoneOffset.UTC))
                 .update();
-        for (var reading : decision.readings()) {
-            var wasReused = reusedIds.contains(reading.result().id());
-            if (!wasReused) {
+        for (var i = 0; i < readings.size(); i++) {
+            var reading = readings.get(i);
+            var reused = lookup.sourceResults().get(i).reused();
+            // A reused Source Result is already kept, and is never changed
+            if (!reused) {
                 sourceResults.add(reading.result());
             }
             jdbc.sql("""
@@ -195,7 +196,7 @@ class LookupService {
                     .param("sourceResultId", reading.result().id())
                     .param("signal", reading.signal().name())
                     .param("explanation", reading.explanation())
-                    .param("reused", wasReused)
+                    .param("reused", reused)
                     .update();
         }
     }

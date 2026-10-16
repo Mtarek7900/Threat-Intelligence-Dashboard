@@ -1,25 +1,36 @@
 import { useState, type FormEvent } from 'react'
-import { makeLookup, type LookupOutcome } from './api/lookups'
+import { makeLookup, type Lookup, type LookupOutcome } from './api/lookups'
 import { LookupResult } from './LookupResult'
 
 type LookupState = { status: 'idle' } | { status: 'looking-up' } | LookupOutcome | { status: 'failed' }
 
+/** A Refresh keeps the Lookup on screen until the new one arrives, and after it fails. */
+type RefreshState = 'idle' | 'refreshing' | 'failed'
+
 export function LookupForm() {
   const [input, setInput] = useState('')
   const [state, setState] = useState<LookupState>({ status: 'idle' })
+  const [refresh, setRefresh] = useState<RefreshState>('idle')
 
-  async function lookUp(indicator: string, options?: { refresh: boolean }) {
+  async function submit(event: FormEvent) {
+    event.preventDefault()
     setState({ status: 'looking-up' })
+    setRefresh('idle')
     try {
-      setState(await makeLookup(indicator, options))
+      setState(await makeLookup(input))
     } catch {
       setState({ status: 'failed' })
     }
   }
 
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    lookUp(input)
+  async function refreshLookup(lookup: Lookup) {
+    setRefresh('refreshing')
+    try {
+      setState(await makeLookup(lookup.indicator, { refresh: true }))
+      setRefresh('idle')
+    } catch {
+      setRefresh('failed')
+    }
   }
 
   return (
@@ -61,8 +72,22 @@ export function LookupForm() {
           The Lookup failed. Is the server running?
         </p>
       )}
+      {state.status === 'made' && refresh === 'refreshing' && (
+        <p role="status" className="mt-3 text-slate-600">
+          Asking the Sources again…
+        </p>
+      )}
+      {state.status === 'made' && refresh === 'failed' && (
+        <p role="alert" className="mt-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-900">
+          The Refresh failed, so this is still the earlier Lookup. Is the server running?
+        </p>
+      )}
       {state.status === 'made' && (
-        <LookupResult lookup={state.lookup} onRefresh={() => lookUp(state.lookup.indicator, { refresh: true })} />
+        <LookupResult
+          lookup={state.lookup}
+          refreshing={refresh === 'refreshing'}
+          onRefresh={() => refreshLookup(state.lookup)}
+        />
       )}
     </section>
   )

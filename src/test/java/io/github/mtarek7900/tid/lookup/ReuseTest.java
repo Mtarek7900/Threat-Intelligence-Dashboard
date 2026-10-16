@@ -120,6 +120,17 @@ class ReuseTest {
     }
 
     @Test
+    void aSourceResultExactlyAsOldAsTheReuseWindowIsNotReused() {
+        lookUp(IP_ADDRESS);
+        clock.advance(Duration.ofHours(24));
+
+        var lookup = lookUp(IP_ADDRESS);
+
+        assertThat(virusTotal.requestsReceived()).isEqualTo(2);
+        assertThat(reusedFlags(lookup)).containsExactly(false, false, false);
+    }
+
+    @Test
     void reuseIsDecidedPerSourceSoOnlyAStaleSourceIsAskedAgain() {
         lookUp(IP_ADDRESS);
         clock.advance(Duration.ofHours(12));

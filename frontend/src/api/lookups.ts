@@ -85,7 +85,7 @@ export async function makeLookup(input: string, { refresh = false } = {}): Promi
   const response = await fetch('/api/lookups', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(refresh ? { input, refresh } : { input }),
+    body: JSON.stringify({ input, refresh }),
   })
   if (response.status === 400) {
     const problem: { detail: string } = await response.json()

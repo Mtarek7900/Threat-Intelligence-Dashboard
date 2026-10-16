@@ -34,8 +34,19 @@ const notCheckedReasonLabels: Record<NotCheckedReason, string> = {
   MISSING_API_KEY: 'missing API key',
 }
 
-/** @param onRefresh asks every Source about the Indicator again, however recent its Source Result */
-export function LookupResult({ lookup, onRefresh }: { lookup: Lookup; onRefresh: () => void }) {
+/**
+ * @param onRefresh asks every Source about the Indicator again, however recent its Source Result
+ * @param refreshing whether a Refresh is under way
+ */
+export function LookupResult({
+  lookup,
+  refreshing,
+  onRefresh,
+}: {
+  lookup: Lookup
+  refreshing: boolean
+  onRefresh: () => void
+}) {
   return (
     <section aria-label="Lookup" className="mt-3 space-y-4">
       <div className="rounded-lg border border-slate-200 bg-white p-6">
@@ -49,8 +60,9 @@ export function LookupResult({ lookup, onRefresh }: { lookup: Lookup; onRefresh:
           <button
             type="button"
             onClick={onRefresh}
+            disabled={refreshing}
             title="Ask every Source again, however recent its Source Result"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50"
           >
             Refresh
           </button>

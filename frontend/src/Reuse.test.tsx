@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { server } from './test/server'
 import { App } from './App'
@@ -93,5 +93,51 @@ test('Refresh asks every Source about the Indicator again and shows the new Look
   const panel = within(screen.getByRole('region', { name: 'Lookup' })).getByRole('region', { name: 'VirusTotal' })
   expect(panel).toHaveTextContent('Fetched 2026-01-15 10:05 UTC')
   expect(within(panel).queryByText('Reused')).not.toBeInTheDocument()
-  expect(requests).toEqual([{ input: 'evil[.]com' }, { input: 'evil.com', refresh: true }])
+  expect(requests).toEqual([
+    { input: 'evil[.]com', refresh: false },
+    { input: 'evil.com', refresh: true },
+  ])
+})
+
+test('the earlier Lookup stays on screen while Refresh asks the Sources again', async () => {
+  server.use(
+    http.post('/api/lookups', async ({ request }) => {
+      const body = (await request.json()) as { refresh: boolean }
+      if (body.refresh) {
+        await delay(50)
+        return HttpResponse.json(lookup({ reused: false, fetchedAt: '2026-01-15T10:05:00Z', verdict: 'CLEAN' }), {
+          status: 201,
+        })
+      }
+      return HttpResponse.json(lookup({ reused: true, fetchedAt: '2026-01-14T11:30:00Z' }), { status: 201 })
+    }),
+  )
+
+  await submit('evil.com')
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+
+  expect(screen.getByRole('status')).toHaveTextContent('Asking the Sources again…')
+  expect(screen.getByRole('button', { name: 'Refresh' })).toBeDisabled()
+  expect(screen.getByRole('region', { name: 'Lookup' })).toHaveTextContent('Fetched 2026-01-14 11:30 UTC')
+  await screen.findByText('Clean')
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+})
+
+test('a failed Refresh keeps the earlier Lookup and says it failed', async () => {
+  server.use(
+    http.post('/api/lookups', async ({ request }) => {
+      const body = (await request.json()) as { refresh: boolean }
+      return body.refresh
+        ? new HttpResponse(null, { status: 500 })
+        : HttpResponse.json(lookup({ reused: true, fetchedAt: '2026-01-14T11:30:00Z' }), { status: 201 })
+    }),
+  )
+
+  await submit('evil.com')
+  await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('The Refresh failed')
+  const panel = within(screen.getByRole('region', { name: 'Lookup' })).getByRole('region', { name: 'VirusTotal' })
+  expect(panel).toHaveTextContent('Fetched 2026-01-14 11:30 UTC')
+  expect(screen.getByRole('button', { name: 'Refresh' })).toBeEnabled()
 })
