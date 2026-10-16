@@ -1,0 +1,41 @@
+# The packaged app with a fresh database and every Source faked by WireMock, for the smoke test.
+# Run by the smoke test itself (see global-setup.ts); it never touches the `docker compose up` stack.
+name: tid-e2e
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: tid
+      POSTGRES_USER: tid
+      POSTGRES_PASSWORD: tid
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "tid", "-d", "tid"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  sources:
+    image: wiremock/wiremock:3.13.2
+    volumes:
+      # The backend tests' recorded Source responses, served by the stubs in wiremock/mappings
+      - ../src/test/resources/wiremock/__files:/home/wiremock/__files:ro
+      - ./wiremock/mappings:/home/wiremock/mappings:ro
+
+  app:
+    build: ..
+    ports:
+      - "${E2E_PORT:-8090}:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/tid
+      VIRUSTOTAL_BASE_URL: http://sources:8080
+      VIRUSTOTAL_API_KEY: e2e-virustotal-key
+      ABUSEIPDB_BASE_URL: http://sources:8080/abuseipdb
+      ABUSEIPDB_API_KEY: e2e-abuseipdb-key
+      OTX_BASE_URL: http://sources:8080/otx
+      OTX_API_KEY: e2e-otx-key
+    depends_on:
+      db:
+        condition: service_healthy
+      sources:
+        condition: service_started

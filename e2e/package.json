@@ -1,0 +1,20 @@
+{
+  "name": "threat-intelligence-dashboard-e2e",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "test": "playwright test --grep-invert @demo",
+    "demo": "playwright test --grep @demo"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "22.20.4",
+    "@types/pngjs": "6.0.5",
+    "gifenc": "1.0.3",
+    "pngjs": "7.0.0"
+  }
+}

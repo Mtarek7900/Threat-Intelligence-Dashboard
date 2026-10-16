@@ -1,0 +1,40 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/v3/files/9f2c4e1b7a5d3c8e6f0a2b4d6c8e0f1a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e",
+        "headers": {
+          "x-apikey": {
+            "equalTo": "e2e-virustotal-key"
+          }
+        }
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "virustotal/file-not-found.json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/otx/api/v1/indicators/file/9f2c4e1b7a5d3c8e6f0a2b4d6c8e0f1a3b5c7d9e1f2a4b6c8d0e2f4a6b8c0d2e/general",
+        "headers": {
+          "X-OTX-API-KEY": {
+            "equalTo": "e2e-otx-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "otx/file-no-pulses.json"
+      }
+    }
+  ]
+}

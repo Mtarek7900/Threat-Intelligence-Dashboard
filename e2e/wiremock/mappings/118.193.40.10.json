@@ -1,0 +1,63 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/v3/ip_addresses/118.193.40.10",
+        "headers": {
+          "x-apikey": {
+            "equalTo": "e2e-virustotal-key"
+          }
+        }
+      },
+      "response": {
+        "status": 429,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "virustotal/rate-limited.json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/abuseipdb/api/v2/check",
+        "queryParameters": {
+          "ipAddress": {
+            "equalTo": "118.193.40.10"
+          }
+        },
+        "headers": {
+          "Key": {
+            "equalTo": "e2e-abuseipdb-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "abuseipdb/suspicious-confidence.json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/otx/api/v1/indicators/IPv4/118.193.40.10/general",
+        "headers": {
+          "X-OTX-API-KEY": {
+            "equalTo": "e2e-otx-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "otx/ip-address-one-pulse.json"
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/api/v3/domains/example.com",
+        "headers": {
+          "x-apikey": {
+            "equalTo": "e2e-virustotal-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "virustotal/domain-clean.json"
+      }
+    },
+    {
+      "request": {
+        "method": "GET",
+        "urlPath": "/otx/api/v1/indicators/domain/example.com/general",
+        "headers": {
+          "X-OTX-API-KEY": {
+            "equalTo": "e2e-otx-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "otx/domain-no-pulses.json"
+      }
+    }
+  ]
+}
