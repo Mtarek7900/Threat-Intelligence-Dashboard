@@ -22,9 +22,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  * Seam 1: the whole app on a random port, real HTTP, PostgreSQL in Testcontainers, Sources faked
  * by WireMock and a {@link TestClock} in place of the system clock. Inject the TestClock to control
  * time, and {@link FakeVirusTotal}, {@link FakeAbuseIpdb} and {@link FakeOtx} to say what the Sources
- * answer. Every test starts with no Lookups, no Source Results and nothing programmed into the fake
- * Sources except that OTX has no pulses, because all integration tests share one database and one
- * WireMock server. Each Source gets {@link #SOURCE_TIMEOUT} to answer;
+ * answer. Every test starts at {@link #START}, with no Lookups, no Source Results and nothing programmed
+ * into the fake Sources except that OTX has no pulses, because all integration tests share one
+ * database, one clock and one WireMock server. Each Source gets {@link #SOURCE_TIMEOUT} to answer;
  * a test class can override these properties with its own {@code @TestPropertySource}.
  */
 @Target(ElementType.TYPE)
@@ -43,10 +43,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             "tid.sources.timeout=" + IntegrationTest.SOURCE_TIMEOUT
         })
 @Sql(statements = "truncate lookup_source_result, lookup, source_result")
-@ExtendWith(IntegrationTest.ResetFakeSources.class)
+@ExtendWith(IntegrationTest.ResetSharedState.class)
 public @interface IntegrationTest {
 
     String SOURCE_TIMEOUT = "2s";
+
+    Instant START = Instant.parse("2026-01-15T10:00:00Z");
 
     @TestConfiguration(proxyBeanMethods = false)
     class TestClockConfiguration {
@@ -54,17 +56,18 @@ public @interface IntegrationTest {
         @Bean
         @Primary
         TestClock testClock() {
-            return new TestClock(Instant.parse("2026-01-15T10:00:00Z"));
+            return new TestClock(START);
         }
     }
 
-    class ResetFakeSources implements BeforeEachCallback {
+    class ResetSharedState implements BeforeEachCallback {
 
         @Override
         public void beforeEach(ExtensionContext context) {
             var spring = SpringExtension.getApplicationContext(context);
             spring.getBean(WireMockServer.class).resetAll();
             spring.getBean(FakeOtx.class).mentionsNothing();
+            spring.getBean(TestClock.class).setInstant(START);
         }
     }
 }

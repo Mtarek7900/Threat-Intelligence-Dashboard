@@ -70,7 +70,7 @@ class MakingALookupTest {
 
         var history = api.get().uri("/api/lookups").retrieve().body(JsonNode.class);
 
-        assertThat(history).singleElement().satisfies(entry -> {
+        assertThat(history).singleElement().extracting(group -> group.get("latest")).satisfies(entry -> {
             for (var field : new String[] {"id", "indicator", "indicatorType", "verdict", "lookedUpAt"}) {
                 assertThat(entry.get(field)).as(field).isEqualTo(lookup.get(field));
             }

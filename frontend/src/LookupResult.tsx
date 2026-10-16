@@ -1,25 +1,6 @@
 import { useId } from 'react'
-import type { IndicatorType, Lookup, NotCheckedReason, OtxFacts, Outcome, SourceResult, Verdict } from './api/lookups'
-
-const indicatorTypeLabels: Record<IndicatorType, string> = {
-  IP_ADDRESS: 'IP address',
-  DOMAIN: 'Domain',
-  FILE_HASH: 'File hash',
-}
-
-const verdictLabels: Record<Verdict, string> = {
-  MALICIOUS: 'Malicious',
-  SUSPICIOUS: 'Suspicious',
-  CLEAN: 'Clean',
-  UNKNOWN: 'Unknown',
-}
-
-const verdictStyles: Record<Verdict, string> = {
-  MALICIOUS: 'border-red-300 bg-red-50 text-red-900',
-  SUSPICIOUS: 'border-amber-300 bg-amber-50 text-amber-900',
-  CLEAN: 'border-emerald-300 bg-emerald-50 text-emerald-900',
-  UNKNOWN: 'border-slate-300 bg-slate-100 text-slate-800',
-}
+import type { Lookup, NotCheckedReason, OtxFacts, Outcome, SourceResult } from './api/lookups'
+import { formatUtc, indicatorTypeLabels, verdictLabels, verdictStyles } from './labels'
 
 const outcomeLabels: Record<Outcome, string> = {
   SEEN: 'Seen',
@@ -56,6 +37,8 @@ export function LookupResult({
             <dd className="font-mono break-all text-slate-900">{lookup.indicator}</dd>
             <dt className="text-slate-500">Type</dt>
             <dd className="text-slate-900">{indicatorTypeLabels[lookup.indicatorType]}</dd>
+            <dt className="text-slate-500">Looked up</dt>
+            <dd className="text-slate-900">{formatUtc(lookup.lookedUpAt)}</dd>
           </dl>
           <button
             type="button"
@@ -218,11 +201,6 @@ function OtxPulses({ facts: { pulseCount, pulses } }: { facts: OtxFacts }) {
 function countryName(code: string) {
   const name = new Intl.DisplayNames(['en'], { type: 'region' }).of(code)
   return name && name !== code ? `${name} (${code})` : code
-}
-
-/** E.g. "2026-01-14 08:30 UTC": the same for every Analyst, whatever their time zone. */
-function formatUtc(instant: string) {
-  return new Date(instant).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
 }
 
 function prettyJson(raw: string) {

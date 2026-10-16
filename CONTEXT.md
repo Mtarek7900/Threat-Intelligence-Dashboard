@@ -25,7 +25,7 @@ One request by an Analyst to find out what is known about a single Indicator. A 
 _Avoid_: Search, query, scan, check
 
 **Lookup History**:
-An Analyst's own past Lookups, most recent first. It is visible only to that Analyst.
+An Analyst's own past Lookups, most recent first. Repeated Lookups of the same Indicator are grouped under it with a count, but each is still kept and can be opened as it was. It is visible only to that Analyst.
 _Avoid_: Recent searches, activity, log, feed
 
 **Lookup Allowance**:

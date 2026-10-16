@@ -5,10 +5,12 @@ import io.github.mtarek7900.tid.indicator.ParseResult.Accepted;
 import io.github.mtarek7900.tid.indicator.ParseResult.Rejected;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,8 +29,14 @@ class LookupController {
     }
 
     @GetMapping
-    List<LookupHistoryEntry> history() {
+    List<LookupHistoryGroup> history() {
         return history.of(LocalAnalyst.ID);
+    }
+
+    /** The Lookup as it was made, however many newer Source Results exist for its Indicator since. */
+    @GetMapping("/{id}")
+    ResponseEntity<Lookup> lookup(@PathVariable UUID id) {
+        return ResponseEntity.of(history.find(LocalAnalyst.ID, id));
     }
 
     /** Rejected input gets a 400 problem whose detail tells the Analyst what's wrong. */

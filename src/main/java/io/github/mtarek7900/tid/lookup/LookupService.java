@@ -189,29 +189,21 @@ class LookupService {
                 sourceResults.add(reading.result());
             }
             jdbc.sql("""
-                            insert into lookup_source_result (lookup_id, source_result_id, signal, explanation, reused)
-                            values (:lookupId, :sourceResultId, :signal, :explanation, :reused)
+                            insert into lookup_source_result
+                                (lookup_id, source_result_id, signal, explanation, reused, position)
+                            values (:lookupId, :sourceResultId, :signal, :explanation, :reused, :position)
                             """)
                     .param("lookupId", lookup.id())
                     .param("sourceResultId", reading.result().id())
                     .param("signal", reading.signal().name())
                     .param("explanation", reading.explanation())
                     .param("reused", reused)
+                    .param("position", i)
                     .update();
         }
     }
 
     private static UsedSourceResult used(Reading reading, boolean reused) {
-        var result = reading.result();
-        return new UsedSourceResult(
-                result.source(),
-                result.outcome(),
-                result.notCheckedReason(),
-                reading.signal(),
-                result.facts(),
-                result.link(),
-                result.fetchedAt(),
-                reused,
-                result.rawResponse());
+        return UsedSourceResult.of(reading.result(), reading.signal(), reused);
     }
 }

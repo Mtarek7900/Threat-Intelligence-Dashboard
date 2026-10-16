@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -71,6 +72,23 @@ public class SourceResults {
                 .list()
                 .stream()
                 .collect(Collectors.toMap(SourceResult::source, Function.identity()));
+    }
+
+    /** The Source Results about the Indicator with these ids, by id. */
+    public Map<UUID, SourceResult> withIds(Indicator indicator, Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return jdbc.sql("""
+                        select id, source, outcome, not_checked_reason, facts, link, raw_response, fetched_at
+                        from source_result
+                        where id in (:ids)
+                        """)
+                .param("ids", ids)
+                .query((row, rowNumber) -> fromRow(row, indicator))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(SourceResult::id, Function.identity()));
     }
 
     private SourceResult fromRow(ResultSet row, Indicator indicator) throws SQLException {

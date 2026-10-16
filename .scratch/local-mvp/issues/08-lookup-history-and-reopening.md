@@ -4,11 +4,11 @@
 
 **Blocked by:** 03 (VirusTotal Lookup with Verdict)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `GET /api/lookups` returns the Lookup History most recent first, grouped by Indicator with a count and the latest Lookup per group
-- [ ] `GET /api/lookups/{id}` returns that Lookup with its stored Verdict, Partial info, "Why?" lines and the exact Source Results it used
-- [ ] Integration tests prove ordering, grouping and that a past Lookup is unchanged after newer Source Results arrive for the same Indicator
-- [ ] The home screen renders history entries with Verdict, Type, timestamp and a "×N" badge for repeats; clicking an entry opens it; the empty state still shows when there's no history
-- [ ] A group can be expanded to show each individual Lookup in it
-- [ ] Frontend tests cover the list, the grouping and opening a past Lookup
+- [x] `GET /api/lookups` returns the Lookup History most recent first, grouped by Indicator with a count and the latest Lookup per group
+- [x] `GET /api/lookups/{id}` returns that Lookup with its stored Verdict, Partial info, "Why?" lines and the exact Source Results it used
+- [x] Integration tests prove ordering, grouping and that a past Lookup is unchanged after newer Source Results arrive for the same Indicator
+- [x] The home screen renders history entries with Verdict, Type, timestamp and a "×N" badge for repeats; clicking an entry opens it; the empty state still shows when there's no history
+- [x] A group can be expanded to show each individual Lookup in it
+- [x] Frontend tests cover the list, the grouping and opening a past Lookup

@@ -4,6 +4,7 @@ import io.github.mtarek7900.tid.indicator.IndicatorType;
 import io.github.mtarek7900.tid.source.NotCheckedReason;
 import io.github.mtarek7900.tid.source.Outcome;
 import io.github.mtarek7900.tid.source.SourceFacts;
+import io.github.mtarek7900.tid.source.SourceResult;
 import io.github.mtarek7900.tid.verdict.Signal;
 import io.github.mtarek7900.tid.verdict.Verdict;
 import java.time.Instant;
@@ -42,5 +43,19 @@ public record Lookup(
             String link,
             Instant fetchedAt,
             boolean reused,
-            String rawResponse) {}
+            String rawResponse) {
+
+        static UsedSourceResult of(SourceResult result, Signal signal, boolean reused) {
+            return new UsedSourceResult(
+                    result.source(),
+                    result.outcome(),
+                    result.notCheckedReason(),
+                    signal,
+                    result.facts(),
+                    result.link(),
+                    result.fetchedAt(),
+                    reused,
+                    result.rawResponse());
+        }
+    }
 }

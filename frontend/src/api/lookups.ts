@@ -6,7 +6,17 @@ export type LookupHistoryEntry = {
   lookedUpAt: string
 }
 
-export async function fetchLookupHistory(): Promise<LookupHistoryEntry[]> {
+/** Every Lookup of one Indicator, most recent first; `latest` is the first of `lookups`. */
+export type LookupHistoryGroup = {
+  indicator: string
+  indicatorType: IndicatorType
+  count: number
+  latest: LookupHistoryEntry
+  lookups: LookupHistoryEntry[]
+}
+
+/** The groups come with the one holding the most recent Lookup first. */
+export async function fetchLookupHistory(): Promise<LookupHistoryGroup[]> {
   const response = await fetch('/api/lookups')
   if (!response.ok) {
     throw new Error(`GET /api/lookups failed with ${response.status}`)
@@ -95,4 +105,13 @@ export async function makeLookup(input: string, { refresh = false } = {}): Promi
     throw new Error(`POST /api/lookups failed with ${response.status}`)
   }
   return { status: 'made', lookup: await response.json() }
+}
+
+/** A past Lookup as it was made, whatever newer Source Results exist for its Indicator since. */
+export async function fetchLookup(id: string): Promise<Lookup> {
+  const response = await fetch(`/api/lookups/${encodeURIComponent(id)}`)
+  if (!response.ok) {
+    throw new Error(`GET /api/lookups/${id} failed with ${response.status}`)
+  }
+  return response.json()
 }

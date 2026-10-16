@@ -110,7 +110,7 @@ class NotCheckedTest {
 
         var history = api.get().uri("/api/lookups").retrieve().body(JsonNode.class);
 
-        assertThat(history).singleElement().satisfies(entry -> {
+        assertThat(history).singleElement().extracting(group -> group.get("latest")).satisfies(entry -> {
             assertThat(entry.get("id")).isEqualTo(lookup.get("id"));
             assertThat(entry.get("verdict").asText()).isEqualTo("UNKNOWN");
         });
