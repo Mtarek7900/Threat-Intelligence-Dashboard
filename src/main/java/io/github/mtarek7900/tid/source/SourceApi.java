@@ -35,24 +35,27 @@ final class SourceApi {
     private final boolean hasApiKey;
     private final RestClient http;
     private final ObjectMapper json;
-    private final BooleanSupplier countCall;
+    private final BooleanSupplier takeCall;
     private final Clock clock;
 
-    /** @param countCall counts a call about to be sent, or says the daily limit is reached */
+    /**
+     * @param takeCall takes one of today's calls for the one about to be sent, or gives false once the
+     *     daily limit is reached
+     */
     SourceApi(
             String source,
             String apiKeyVariable,
             String apiKey,
             RestClient http,
             ObjectMapper json,
-            BooleanSupplier countCall,
+            BooleanSupplier takeCall,
             Clock clock) {
         this.source = source;
         this.apiKeyVariable = apiKeyVariable;
         this.hasApiKey = apiKey != null && !apiKey.isBlank();
         this.http = http;
         this.json = json;
-        this.countCall = countCall;
+        this.takeCall = takeCall;
         this.clock = clock;
     }
 
@@ -61,7 +64,7 @@ final class SourceApi {
             throw new SourceException(NotCheckedReason.MISSING_API_KEY, apiKeyVariable + " isn't set");
         }
         // Counted when sent, not when answered: the Source counts a call it answers too late or with an error
-        if (!countCall.getAsBoolean()) {
+        if (!takeCall.getAsBoolean()) {
             throw new SourceException(NotCheckedReason.DAILY_LIMIT_REACHED, source + " has been asked its daily limit");
         }
         return http.get()

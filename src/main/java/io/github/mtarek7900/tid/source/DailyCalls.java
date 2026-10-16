@@ -19,11 +19,11 @@ class DailyCalls {
     }
 
     /**
-     * Counts one more call to the Source today, unless it has already been asked {@code limit} times.
+     * Takes one of the Source's calls for today, unless it has already been asked {@code limit} times.
      *
-     * @return whether the call was counted and so may be sent
+     * @return whether a call was taken, so it may be sent
      */
-    boolean count(String source, int limit) {
+    boolean takeCall(String source, int limit) {
         if (limit <= 0) {
             return false;
         }

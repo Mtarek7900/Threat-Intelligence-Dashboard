@@ -3,6 +3,7 @@ package io.github.mtarek7900.tid.source;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.http.HttpClient;
 import java.time.Clock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -52,7 +53,7 @@ class SourceApis {
         client.accept(builder);
         // Rounded down, so the Source is never asked more than the stop percentage of its quota
         var dailyLimit = dailyQuota * sources.dailyStopPercent() / 100;
-        return new SourceApi(
-                source, apiKeyVariable, apiKey, builder.build(), json, () -> dailyCalls.count(source, dailyLimit), clock);
+        BooleanSupplier takeCall = () -> dailyCalls.takeCall(source, dailyLimit);
+        return new SourceApi(source, apiKeyVariable, apiKey, builder.build(), json, takeCall, clock);
     }
 }
