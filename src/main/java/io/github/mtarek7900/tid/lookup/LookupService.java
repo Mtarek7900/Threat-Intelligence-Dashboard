@@ -109,7 +109,8 @@ class LookupService {
                 decision.readings().stream()
                         .map(reading -> used(reading, reusedIds.contains(reading.result().id())))
                         .toList(),
-                lookedUpAt);
+                lookedUpAt,
+                null);
         transactions.executeWithoutResult(status -> keep(analystId, lookup, decision.readings()));
         return lookup;
     }

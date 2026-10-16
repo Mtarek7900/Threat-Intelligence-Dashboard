@@ -140,6 +140,7 @@ export function HomePage() {
             lookup={state.lookup}
             refreshing={refresh === 'refreshing'}
             onRefresh={() => refreshLookup(state.lookup)}
+            onOpen={open}
           />
         )}
       </section>

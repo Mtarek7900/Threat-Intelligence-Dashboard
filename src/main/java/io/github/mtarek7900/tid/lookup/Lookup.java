@@ -1,5 +1,6 @@
 package io.github.mtarek7900.tid.lookup;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.github.mtarek7900.tid.indicator.IndicatorType;
 import io.github.mtarek7900.tid.source.NotCheckedReason;
 import io.github.mtarek7900.tid.source.Outcome;
@@ -16,6 +17,8 @@ import java.util.UUID;
  * @param sourcesNotChecked the Sources asked whose Source Result is Not Checked
  * @param why one line per Source Result, saying which Signal it gave and why
  * @param sourcesAsked the names of the Sources that cover the Indicator Type
+ * @param newerResults the most recent later Lookup of the Indicator that used Source Results newer
+ *     than this Lookup's; null, and left out of the JSON, otherwise
  */
 public record Lookup(
         UUID id,
@@ -27,7 +30,22 @@ public record Lookup(
         List<String> why,
         List<String> sourcesAsked,
         List<UsedSourceResult> sourceResults,
-        Instant lookedUpAt) {
+        Instant lookedUpAt,
+        @JsonInclude(JsonInclude.Include.NON_NULL) NewerResults newerResults) {
+
+    Lookup withNewerResults(NewerResults newerResults) {
+        return new Lookup(
+                id, indicator, indicatorType, verdict, partial, sourcesNotChecked, why, sourcesAsked, sourceResults,
+                lookedUpAt, newerResults);
+    }
+
+    /**
+     * A later Lookup of the same Indicator that used newer Source Results, so the picture may have changed.
+     *
+     * @param lookupId the later Lookup, to open the newer picture
+     * @param lookedUpAt when the newer Verdict was reached
+     */
+    public record NewerResults(UUID lookupId, Verdict verdict, Instant lookedUpAt) {}
 
     /**
      * A Source Result this Lookup used, with the Signal the Verdict rule read from it.

@@ -9,6 +9,7 @@ import io.github.mtarek7900.tid.verdict.Signal;
 import io.github.mtarek7900.tid.verdict.Verdict;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
@@ -68,7 +69,51 @@ class LookupHistory {
                         row.getBoolean("partial"),
                         row.getObject("looked_up_at", OffsetDateTime.class).toInstant()))
                 .optional()
-                .map(stored -> withSourceResults(lookupId, stored));
+                .map(stored -> withSourceResults(lookupId, stored)
+                        .withNewerResults(newerResults(analystId, lookupId, stored)));
+    }
+
+    /**
+     * The Analyst's most recent later Lookup of the Indicator that used a Seen or Not Seen Source
+     * Result fetched after any the given Lookup used from the same Source. A later Lookup that only
+     * reused the same Source Results, or whose newer ones are Not Checked, adds nothing to the picture.
+     */
+    private Lookup.NewerResults newerResults(UUID analystId, UUID lookupId, StoredLookup stored) {
+        return jdbc.sql("""
+                        select later.id, later.verdict, later.looked_up_at
+                        from lookup later
+                        where later.analyst_id = :analystId
+                          and later.indicator = :indicator
+                          and later.indicator_type = :indicatorType
+                          and later.looked_up_at > :lookedUpAt
+                          and exists (
+                              select 1
+                              from lookup_source_result newer_link
+                              join source_result newer on newer.id = newer_link.source_result_id
+                              where newer_link.lookup_id = later.id
+                                and newer.outcome in ('SEEN', 'NOT_SEEN')
+                                and newer.fetched_at > coalesce(
+                                    (select max(used.fetched_at)
+                                     from lookup_source_result used_link
+                                     join source_result used on used.id = used_link.source_result_id
+                                     where used_link.lookup_id = :lookupId
+                                       and used.source = newer.source
+                                       and used.outcome in ('SEEN', 'NOT_SEEN')),
+                                    '-infinity'))
+                        order by later.looked_up_at desc
+                        limit 1
+                        """)
+                .param("analystId", analystId)
+                .param("indicator", stored.indicator().value())
+                .param("indicatorType", stored.indicator().type().name())
+                .param("lookedUpAt", stored.lookedUpAt().atOffset(ZoneOffset.UTC))
+                .param("lookupId", lookupId)
+                .query((row, rowNumber) -> new Lookup.NewerResults(
+                        row.getObject("id", UUID.class),
+                        Verdict.valueOf(row.getString("verdict")),
+                        row.getObject("looked_up_at", OffsetDateTime.class).toInstant()))
+                .optional()
+                .orElse(null);
     }
 
     private Lookup withSourceResults(UUID lookupId, StoredLookup stored) {
@@ -100,7 +145,8 @@ class LookupHistory {
                 // Every Source asked gives the Lookup one Source Result, Not Checked if it couldn't answer
                 used.stream().map(UsedSourceResult::source).toList(),
                 used,
-                stored.lookedUpAt());
+                stored.lookedUpAt(),
+                null);
     }
 
     private record StoredLookup(Indicator indicator, Verdict verdict, boolean partial, Instant lookedUpAt) {}

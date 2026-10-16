@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import type { Lookup, NotCheckedReason, OtxFacts, Outcome, SourceResult } from './api/lookups'
+import type { Lookup, NewerResults, NotCheckedReason, OtxFacts, Outcome, SourceResult } from './api/lookups'
 import { formatUtc, indicatorTypeLabels, verdictLabels, verdictStyles } from './labels'
 
 const outcomeLabels: Record<Outcome, string> = {
@@ -18,18 +18,23 @@ const notCheckedReasonLabels: Record<NotCheckedReason, string> = {
 /**
  * @param onRefresh asks every Source about the Indicator again, however recent its Source Result
  * @param refreshing whether a Refresh is under way
+ * @param onOpen opens another Lookup by id, such as the newer one the banner points to
  */
 export function LookupResult({
   lookup,
   refreshing,
   onRefresh,
+  onOpen,
 }: {
   lookup: Lookup
   refreshing: boolean
   onRefresh: () => void
+  onOpen: (id: string) => void
 }) {
   return (
     <section aria-label="Lookup" className="mt-3 space-y-4">
+      {lookup.newerResults && <NewerResultsBanner newer={lookup.newerResults} onOpen={onOpen} />}
+
       <div className="rounded-lg border border-slate-200 bg-white p-6">
         <div className="flex items-start justify-between gap-4">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
@@ -80,6 +85,27 @@ export function LookupResult({
         <SourcePanel key={result.source} result={result} />
       ))}
     </section>
+  )
+}
+
+function NewerResultsBanner({ newer, onOpen }: { newer: NewerResults; onOpen: (id: string) => void }) {
+  return (
+    <div
+      role="note"
+      aria-label="Newer Source Results"
+      className="flex items-center justify-between gap-4 rounded-lg border border-sky-300 bg-sky-50 px-4 py-3 text-sky-900"
+    >
+      <p>
+        Newer Source Results exist for this Indicator: <strong>{verdictLabels[newer.verdict]}</strong>, reached {formatUtc(newer.lookedUpAt)}.
+      </p>
+      <button
+        type="button"
+        onClick={() => onOpen(newer.lookupId)}
+        className="shrink-0 rounded-lg border border-sky-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-sky-100"
+      >
+        Open the newer Lookup
+      </button>
+    </div>
   )
 }
 

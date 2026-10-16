@@ -33,7 +33,10 @@ class LookupController {
         return history.of(LocalAnalyst.ID);
     }
 
-    /** The Lookup as it was made, however many newer Source Results exist for its Indicator since. */
+    /**
+     * The Lookup as it was made, however many newer Source Results exist for its Indicator since,
+     * with a summary of the latest Lookup when that used newer ones.
+     */
     @GetMapping("/{id}")
     ResponseEntity<Lookup> lookup(@PathVariable UUID id) {
         return ResponseEntity.of(history.find(LocalAnalyst.ID, id));

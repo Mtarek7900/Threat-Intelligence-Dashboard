@@ -3,6 +3,7 @@ package io.github.mtarek7900.tid.lookup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.mtarek7900.tid.FakeAbuseIpdb;
 import io.github.mtarek7900.tid.FakeOtx;
 import io.github.mtarek7900.tid.FakeVirusTotal;
@@ -122,7 +123,9 @@ class LookupHistoryTest {
         var refreshed = lookUp(Map.of("input", IP_ADDRESS, "refresh", true));
         assertThat(refreshed.get("verdict")).isNotEqualTo(made.get("verdict"));
 
-        var opened = open(made.get("id").asText());
+        var opened = (ObjectNode) open(made.get("id").asText());
+        // The only addition is the summary of the newer Lookup, covered by NewerResultsTest
+        opened.remove("newerResults");
 
         assertThat(opened).isEqualTo(made);
         assertThat(opened.get("verdict").asText()).isEqualTo("MALICIOUS");

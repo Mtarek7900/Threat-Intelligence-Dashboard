@@ -83,6 +83,15 @@ export type Lookup = {
   sourcesAsked: string[]
   sourceResults: SourceResult[]
   lookedUpAt: string
+  /** Only on a past Lookup opened by id, and only when a later Lookup used newer Source Results. */
+  newerResults?: NewerResults
+}
+
+/** The most recent later Lookup of the same Indicator that used newer Source Results; `lookedUpAt` is when its Verdict was reached. */
+export type NewerResults = {
+  lookupId: string
+  verdict: Verdict
+  lookedUpAt: string
 }
 
 export type LookupOutcome = { status: 'made'; lookup: Lookup } | { status: 'rejected'; message: string }
